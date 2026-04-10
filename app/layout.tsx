@@ -4,6 +4,8 @@ import "./globals.css";
 import { LenisProvider } from "@/components/animation/LenisProvider";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { BottomNav } from "@/components/BottomNav";
+import { CommandPalette } from "@/components/CommandPalette";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,8 +37,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <LenisProvider>
           <Header />
-          <main className="flex-1 pt-16">{children}</main>
+          <main className="flex-1 pt-16 pb-16 md:pb-0">{children}</main>
           <Footer />
+          <BottomNav />
+          <CommandPalette />
         </LenisProvider>
       </body>
     </html>
