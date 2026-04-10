@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Sky } from "@react-three/drei";
-import { useRef, useMemo } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
 const vertexShader = /* glsl */ `
@@ -39,12 +39,9 @@ const fragmentShader = /* glsl */ `
     mixStrength = clamp(mixStrength, 0.0, 1.0);
 
     vec3 color = mix(uDeepColor, uSurfaceColor, mixStrength);
-
-    // Foam on crests
     float foam = smoothstep(0.6, 1.0, mixStrength);
     color = mix(color, uFoamColor, foam * 0.4);
 
-    // Subtle specular
     float spec = pow(mixStrength, 4.0) * 0.3;
     color += vec3(spec);
 
@@ -54,7 +51,7 @@ const fragmentShader = /* glsl */ `
 
 function OceanMesh() {
   const meshRef = useRef<THREE.Mesh>(null);
-
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
@@ -66,7 +63,9 @@ function OceanMesh() {
   );
 
   useFrame((_, delta) => {
-    uniforms.uTime.value += delta;
+    if (materialRef.current) {
+      materialRef.current.uniforms.uTime.value += delta;
+    }
   });
 
   return (
@@ -77,6 +76,7 @@ function OceanMesh() {
     >
       <planeGeometry args={[200, 200, 128, 128]} />
       <shaderMaterial
+        ref={materialRef}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
         uniforms={uniforms}

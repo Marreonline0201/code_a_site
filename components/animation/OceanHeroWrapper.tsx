@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const OceanHero = dynamic(() => import("./OceanHero"), { ssr: false });
 
@@ -12,17 +12,14 @@ function GradientFallback() {
 }
 
 export function OceanHeroWrapper() {
-  const [hasWebGL, setHasWebGL] = useState(false);
-
-  useEffect(() => {
+  const [hasWebGL] = useState(() => {
     try {
       const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
-      setHasWebGL(!!gl);
+      return !!(canvas.getContext("webgl2") || canvas.getContext("webgl"));
     } catch {
-      setHasWebGL(false);
+      return false;
     }
-  }, []);
+  });
 
   return hasWebGL ? <OceanHero /> : <GradientFallback />;
 }

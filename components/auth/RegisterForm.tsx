@@ -14,7 +14,6 @@ export function RegisterForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +28,7 @@ export function RegisterForm() {
       return;
     }
 
+    const supabase = createClient();
     const { error: authError } = await supabase.auth.signUp({
       email: parsed.data.email,
       password: parsed.data.password,
@@ -39,14 +39,11 @@ export function RegisterForm() {
     });
 
     if (authError) {
-      // Generic message — don't reveal if email already exists
       setError("Unable to create account. Please try again.");
       setLoading(false);
       return;
     }
 
-    // Supabase returns success even if email exists (when confirm email is enabled)
-    // This is the desired behavior for enumeration protection
     setSuccess(true);
     setLoading(false);
   }
@@ -101,9 +98,7 @@ export function RegisterForm() {
         </p>
       </div>
 
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? "Creating account..." : "Create Account"}
