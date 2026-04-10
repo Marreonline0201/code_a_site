@@ -319,6 +319,14 @@ export default async function BestForDetailPage({
                       <CountUp end={brand.tds} />
                     </p>
                   </div>
+                  <a
+                    href={`/go/${brand.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer sponsored"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors shrink-0"
+                  >
+                    Amazon →
+                  </a>
                 </div>
               </div>
             </ScrollReveal>
@@ -336,7 +344,7 @@ export default async function BestForDetailPage({
           </ScrollReveal>
           <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {brands.slice(5).map((brand) => (
-              <ProductCard key={brand.slug} brand={brand} />
+              <ProductCard key={brand.slug} brand={brand} showAffiliate />
             ))}
           </StaggerGrid>
         </section>

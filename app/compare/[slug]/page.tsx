@@ -113,9 +113,17 @@ export default async function CompareDetailPage({
                 <p className="text-sm text-muted-foreground mb-3">
                   {brand.origin} &middot; {brand.price_range}
                 </p>
-                <p className="text-sm text-muted-foreground line-clamp-3">
+                <p className="text-sm text-muted-foreground line-clamp-3 mb-4">
                   {brand.tasting_notes}
                 </p>
+                <a
+                  href={`/go/${brand.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer sponsored"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+                >
+                  Check on Amazon →
+                </a>
               </div>
             ))}
           </div>
