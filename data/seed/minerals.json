@@ -1,1 +1,150 @@
-[]
+[
+  {
+    "slug": "calcium",
+    "name": "Calcium",
+    "symbol": "Ca",
+    "unit": "mg/L",
+    "daily_value": 1000,
+    "benefits": [
+      "Bone and tooth health",
+      "Muscle contraction",
+      "Nerve signaling",
+      "Blood clotting"
+    ],
+    "high_threshold": 150,
+    "low_threshold": 20
+  },
+  {
+    "slug": "magnesium",
+    "name": "Magnesium",
+    "symbol": "Mg",
+    "unit": "mg/L",
+    "daily_value": 420,
+    "benefits": [
+      "Muscle function",
+      "Sleep quality",
+      "Bone health",
+      "Energy production"
+    ],
+    "high_threshold": 50,
+    "low_threshold": 10
+  },
+  {
+    "slug": "sodium",
+    "name": "Sodium",
+    "symbol": "Na",
+    "unit": "mg/L",
+    "daily_value": 2300,
+    "benefits": [
+      "Fluid balance",
+      "Nerve impulse transmission",
+      "Muscle contraction",
+      "Nutrient absorption"
+    ],
+    "high_threshold": 200,
+    "low_threshold": 10
+  },
+  {
+    "slug": "potassium",
+    "name": "Potassium",
+    "symbol": "K",
+    "unit": "mg/L",
+    "daily_value": 2600,
+    "benefits": [
+      "Heart rhythm regulation",
+      "Blood pressure control",
+      "Muscle function",
+      "Kidney health"
+    ],
+    "high_threshold": 10,
+    "low_threshold": 1
+  },
+  {
+    "slug": "bicarbonate",
+    "name": "Bicarbonate",
+    "symbol": "HCO3",
+    "unit": "mg/L",
+    "daily_value": 0,
+    "benefits": [
+      "Acid-base balance",
+      "Digestive comfort",
+      "pH buffering",
+      "Exercise recovery"
+    ],
+    "high_threshold": 600,
+    "low_threshold": 50
+  },
+  {
+    "slug": "sulfate",
+    "name": "Sulfate",
+    "symbol": "SO4",
+    "unit": "mg/L",
+    "daily_value": 0,
+    "benefits": [
+      "Digestive health",
+      "Liver detoxification",
+      "Joint health",
+      "Skin health"
+    ],
+    "high_threshold": 200,
+    "low_threshold": 10
+  },
+  {
+    "slug": "chloride",
+    "name": "Chloride",
+    "symbol": "Cl",
+    "unit": "mg/L",
+    "daily_value": 2300,
+    "benefits": [
+      "Fluid balance",
+      "Digestive acid production",
+      "Electrolyte balance",
+      "Nutrient transport"
+    ],
+    "high_threshold": 100,
+    "low_threshold": 5
+  },
+  {
+    "slug": "silica",
+    "name": "Silica",
+    "symbol": "SiO2",
+    "unit": "mg/L",
+    "daily_value": 0,
+    "benefits": [
+      "Skin elasticity",
+      "Hair and nail strength",
+      "Bone mineralization",
+      "Collagen production"
+    ],
+    "high_threshold": 50,
+    "low_threshold": 5
+  },
+  {
+    "slug": "fluoride",
+    "name": "Fluoride",
+    "symbol": "F",
+    "unit": "mg/L",
+    "daily_value": 4,
+    "benefits": [
+      "Tooth enamel strengthening",
+      "Cavity prevention",
+      "Bone density support"
+    ],
+    "high_threshold": 1,
+    "low_threshold": 0.1
+  },
+  {
+    "slug": "tds",
+    "name": "Total Dissolved Solids",
+    "symbol": "TDS",
+    "unit": "mg/L",
+    "daily_value": 0,
+    "benefits": [
+      "Overall mineral richness indicator",
+      "Taste complexity",
+      "Electrolyte content proxy"
+    ],
+    "high_threshold": 500,
+    "low_threshold": 50
+  }
+]
