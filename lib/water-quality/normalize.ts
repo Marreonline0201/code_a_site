@@ -1,5 +1,3 @@
-import "server-only";
-
 import {
   SOURCE_COLUMNS,
   SOURCE_COLUMN_ALIASES,

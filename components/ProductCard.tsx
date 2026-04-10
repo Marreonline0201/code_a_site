@@ -1,0 +1,57 @@
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import type { Brand } from "@/lib/types";
+
+interface ProductCardProps {
+  brand: Brand;
+}
+
+export function ProductCard({ brand }: ProductCardProps) {
+  const mineralHighlight = [
+    { label: "Ca", value: brand.calcium },
+    { label: "Mg", value: brand.magnesium },
+    { label: "Na", value: brand.sodium },
+  ];
+
+  return (
+    <Link href={`/brands/${brand.slug}`}>
+      <div className="glass-card p-5 group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        <div className="flex justify-between items-start mb-3">
+          <Badge variant="secondary" className="text-xs">
+            {brand.type}
+          </Badge>
+          <span className="text-sm font-semibold text-ocean-surface">
+            {brand.rating.toFixed(1)} ★
+          </span>
+        </div>
+
+        <h3 className="text-lg font-bold mb-1 group-hover:text-ocean-surface transition-colors">
+          {brand.name}
+        </h3>
+        <p className="text-sm text-muted-foreground mb-3">{brand.origin}</p>
+
+        <div className="flex gap-3 mb-4">
+          {mineralHighlight.map((m) => (
+            <div key={m.label} className="text-center">
+              <span className="text-xs text-muted-foreground">{m.label}</span>
+              <p className="text-sm font-semibold">{m.value}</p>
+            </div>
+          ))}
+          <div className="text-center">
+            <span className="text-xs text-muted-foreground">TDS</span>
+            <p className="text-sm font-semibold">{brand.tds}</p>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">
+            {brand.price_range}
+          </span>
+          <span className="text-sm font-medium text-primary group-hover:underline">
+            View Details →
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
