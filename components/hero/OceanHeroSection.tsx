@@ -90,6 +90,33 @@ export function OceanHeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoLoaded, setVideoLoaded] = useState(false);
 
+  // Force video play — handles autoplay policy in all browsers
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const tryPlay = () => {
+      video.play().catch(() => {
+        // Autoplay blocked — retry on first user interaction
+        const handleInteraction = () => {
+          video.play().catch(() => {});
+          document.removeEventListener("click", handleInteraction);
+          document.removeEventListener("touchstart", handleInteraction);
+          document.removeEventListener("scroll", handleInteraction);
+        };
+        document.addEventListener("click", handleInteraction, { once: true });
+        document.addEventListener("touchstart", handleInteraction, { once: true });
+        document.addEventListener("scroll", handleInteraction, { once: true });
+      });
+    };
+
+    if (video.readyState >= 3) {
+      tryPlay();
+    } else {
+      video.addEventListener("canplay", tryPlay, { once: true });
+    }
+  }, []);
+
   // Sequential bottle phase-in / phase-out
   useEffect(() => {
     let current = 0;
