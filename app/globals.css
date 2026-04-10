@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #5971a0;
+  --background-deep: #48628e;
+  --panel: #aeb7df;
+  --panel-strong: #c2caec;
+  --accent: #18a9ff;
+  --accent-soft: rgba(24, 169, 255, 0.18);
+  --foreground: #0e1630;
+  --muted: rgba(14, 22, 48, 0.68);
+  --border: rgba(8, 25, 58, 0.34);
+  --shadow-color: rgba(26, 46, 88, 0.34);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Aptos", "Segoe UI Variable Display", "Trebuchet MS", sans-serif;
+  --font-mono: "Consolas", "SFMono-Regular", "Liberation Mono", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Aptos", "Segoe UI Variable Display", "Trebuchet MS", sans-serif;
+}
+
+::selection {
+  background: rgba(24, 169, 255, 0.28);
+  color: var(--foreground);
+}
+
+.ambient-glow {
+  background: rgba(194, 202, 236, 0.16);
+  filter: blur(56px);
+}
+
+.ambient-orb {
+  height: 18rem;
+  width: 18rem;
+  border-radius: 9999px;
+  background: rgba(194, 202, 236, 0.16);
+  filter: blur(28px);
+  pointer-events: none;
+}
+
+.ambient-orb--small {
+  height: 12rem;
+  width: 12rem;
+  background: rgba(24, 169, 255, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    scroll-behavior: auto;
+  }
 }

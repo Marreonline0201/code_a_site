@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Supabase Google OAuth",
-  description: "Next.js 16 backend authentication with Supabase SSR.",
+  title: "TapSafe",
+  description:
+    "Find your local water report, understand the risks, and get clear next steps.",
 };
 
 export default function RootLayout({
