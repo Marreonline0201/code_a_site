@@ -17,6 +17,7 @@ import {
   Scale,
   Activity,
   BookOpen,
+  MapPin,
 } from "lucide-react";
 
 const quickLinks = [
@@ -39,6 +40,11 @@ const quickLinks = [
     label: "Hydration Tracker",
     href: "/tracker",
     icon: Activity,
+  },
+  {
+    label: "NYC Tap Water Lookup",
+    href: "/tap-water",
+    icon: MapPin,
   },
   {
     label: "Blog",

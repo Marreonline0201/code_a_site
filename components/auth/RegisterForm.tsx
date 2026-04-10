@@ -50,9 +50,9 @@ export function RegisterForm() {
 
   if (success) {
     return (
-      <div className="text-center space-y-4">
-        <h3 className="text-lg font-semibold">Check your email</h3>
-        <p className="text-muted-foreground">
+      <div className="space-y-4 text-center">
+        <h3 className="text-lg font-semibold text-[#0e1630]">Check your email</h3>
+        <p className="text-[#0e1630]/64">
           If this email is available, we&apos;ve sent a verification link.
           Click it to activate your account.
         </p>
@@ -63,17 +63,22 @@ export function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name" className="text-[#0e1630]/70">
+          Name
+        </Label>
         <Input
           id="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
           autoComplete="name"
+          className="mt-2 h-11 rounded-2xl border-[#0e1630]/12 bg-white/80 px-4 text-[#0e1630] placeholder:text-[#0e1630]/38 focus-visible:border-[#18a9ff] focus-visible:ring-[#18a9ff]/25"
         />
       </div>
       <div>
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email" className="text-[#0e1630]/70">
+          Email
+        </Label>
         <Input
           id="email"
           type="email"
@@ -81,10 +86,13 @@ export function RegisterForm() {
           onChange={(e) => setEmail(e.target.value)}
           required
           autoComplete="email"
+          className="mt-2 h-11 rounded-2xl border-[#0e1630]/12 bg-white/80 px-4 text-[#0e1630] placeholder:text-[#0e1630]/38 focus-visible:border-[#18a9ff] focus-visible:ring-[#18a9ff]/25"
         />
       </div>
       <div>
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password" className="text-[#0e1630]/70">
+          Password
+        </Label>
         <Input
           id="password"
           type="password"
@@ -92,15 +100,20 @@ export function RegisterForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
           autoComplete="new-password"
+          className="mt-2 h-11 rounded-2xl border-[#0e1630]/12 bg-white/80 px-4 text-[#0e1630] placeholder:text-[#0e1630]/38 focus-visible:border-[#18a9ff] focus-visible:ring-[#18a9ff]/25"
         />
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="mt-2 text-xs text-[#0e1630]/52">
           At least 8 characters with uppercase, lowercase, and a number.
         </p>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button
+        type="submit"
+        className="h-11 w-full rounded-full bg-[#0e1630] text-[#f4f7ff] hover:bg-[#1b2a52]"
+        disabled={loading}
+      >
         {loading ? "Creating account..." : "Create Account"}
       </Button>
     </form>

@@ -12,6 +12,7 @@ const navLinks = [
   { label: "Brands", href: "/brands" },
   { label: "Minerals", href: "/minerals" },
   { label: "Compare", href: "/compare" },
+  { label: "Tap Water", href: "/tap-water" },
   { label: "Tracker", href: "/tracker" },
 ];
 

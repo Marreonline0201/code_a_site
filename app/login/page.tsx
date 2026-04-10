@@ -1,37 +1,39 @@
-import { LoginForm } from "@/components/auth/LoginForm";
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { AuthCard } from "@/app/_components/auth-card";
+import { FrontdoorShell } from "@/app/_components/frontdoor-shell";
+import { LoginForm } from "@/components/auth/LoginForm";
 
 export const metadata: Metadata = {
-  title: "Sign In — MineralWater",
+  title: "Log In - MineralWater",
 };
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel — ocean gradient */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-ocean-deep via-ocean-mid to-ocean-surface items-center justify-center p-12">
-        <div className="text-white text-center max-w-md">
-          <h1 className="text-4xl font-bold mb-4">Welcome Back</h1>
-          <p className="text-white/70 text-lg">
-            Track your hydration, compare mineral water brands, and stay healthy.
+    <FrontdoorShell
+      pageLabel="Login"
+      actions={
+        <Link
+          href="/signup"
+          className="rounded-full border border-white/16 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
+        >
+          Need an account?
+        </Link>
+      }
+    >
+      <AuthCard
+        eyebrow="Login"
+        title="Sign in without the extra noise."
+        description="Use your existing account to return to saved hydration tracking and brand comparisons."
+        footer={
+          <p>
+            The underlying Supabase auth flow stays unchanged. This page only
+            narrows the layout and language around it.
           </p>
-        </div>
-      </div>
-
-      {/* Right panel — form */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-sm">
-          <h2 className="text-2xl font-bold mb-6">Sign in to your account</h2>
-          <LoginForm />
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/register" className="underline hover:text-foreground">
-              Create one
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+        }
+      >
+        <LoginForm />
+      </AuthCard>
+    </FrontdoorShell>
   );
 }
