@@ -34,7 +34,6 @@ export function LoginForm() {
     });
 
     if (authError) {
-      // Generic error message — never reveal whether email exists
       setError("Invalid email or password");
       setLoading(false);
       return;
@@ -100,9 +99,7 @@ export function LoginForm() {
           />
         </div>
 
-        {error && (
-          <p className="text-sm text-destructive">{error}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign In"}
