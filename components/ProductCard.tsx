@@ -56,7 +56,6 @@ export function ProductCard({ brand, showAffiliate = false }: ProductCardProps) 
             target="_blank"
             rel="noopener noreferrer sponsored"
             className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
-            onClick={(e) => e.stopPropagation()}
           >
             <ShoppingCart className="size-3" />
             Amazon
