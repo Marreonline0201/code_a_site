@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
+import { Playfair_Display } from "next/font/google";
 import "./globals.css";
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  variable: "--font-playfair",
+  display: "swap",
+});
 import { LenisProvider } from "@/components/animation/LenisProvider";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -47,7 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+    <html lang="en" className={`h-full antialiased ${playfair.variable}`} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{

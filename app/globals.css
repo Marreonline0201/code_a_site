@@ -234,6 +234,30 @@
   100% { transform: translateY(-100vh) scale(1); opacity: 0; }
 }
 
+/* Ocean hero animations */
+@keyframes oceanSway {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-25%); }
+}
+
+@keyframes bottleFloat {
+  0%, 100% { transform: translateY(0) rotate(var(--bottle-rotate, 0deg)); }
+  33% { transform: translateY(-12px) rotate(calc(var(--bottle-rotate, 0deg) + 3deg)); }
+  66% { transform: translateY(6px) rotate(calc(var(--bottle-rotate, 0deg) - 2deg)); }
+}
+
+@keyframes bubbleRise {
+  0% { transform: translateY(0) scale(0.3); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.2; }
+  100% { transform: translateY(-110vh) scale(1); opacity: 0; }
+}
+
+@keyframes lightRay {
+  0% { opacity: 0.03; }
+  100% { opacity: 0.08; }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
