@@ -1,0 +1,1 @@
+- [Mineral Water Site](project_mineral_water_site.md) — Next.js 16 + Tailwind v4 + Supabase, 50-task plan, ocean theme
