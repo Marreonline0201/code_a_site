@@ -1,6 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
+import { config } from "dotenv";
+
+// Load .env.local since tsx doesn't auto-load it like Next.js does
+config({ path: resolve(__dirname, "../.env.local") });
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
