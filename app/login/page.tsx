@@ -1,33 +1,37 @@
+import { LoginForm } from "@/components/auth/LoginForm";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sign In — MineralWater",
+};
 
 export default function LoginPage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-2xl flex-col justify-center gap-8 px-6 py-16">
-      <div className="space-y-4">
-        <p className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500">
-          Supabase Auth
-        </p>
-        <h1 className="text-4xl font-semibold tracking-tight text-zinc-950">
-          Sign in with Google through the backend OAuth flow.
-        </h1>
-        <p className="max-w-xl text-base leading-7 text-zinc-600">
-          The sign-in starts in a Route Handler, Supabase exchanges the OAuth
-          code in a server callback, and the session is kept in cookies for
-          server-side rendering and protected backend routes.
-        </p>
+    <div className="min-h-screen flex">
+      {/* Left panel — ocean gradient */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-ocean-deep via-ocean-mid to-ocean-surface items-center justify-center p-12">
+        <div className="text-white text-center max-w-md">
+          <h1 className="text-4xl font-bold mb-4">Welcome Back</h1>
+          <p className="text-white/70 text-lg">
+            Track your hydration, compare mineral water brands, and stay healthy.
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <Link
-          className="inline-flex w-fit items-center rounded-full bg-zinc-950 px-5 py-3 text-sm font-medium text-white transition hover:bg-zinc-800"
-          href="/auth/sign-in/google?next=/dashboard"
-        >
-          Continue with Google
-        </Link>
-        <p className="text-sm text-zinc-500">
-          After sign-in, the app redirects to <code>/dashboard</code>.
-        </p>
+      {/* Right panel — form */}
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="w-full max-w-sm">
+          <h2 className="text-2xl font-bold mb-6">Sign in to your account</h2>
+          <LoginForm />
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{" "}
+            <Link href="/register" className="underline hover:text-foreground">
+              Create one
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }
