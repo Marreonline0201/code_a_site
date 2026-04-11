@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { WaveDivider } from "@/components/animation/WaveDivider";
 import { CompareSelector } from "./CompareSelector";
+import { getBrandImage } from "@/lib/brand-images";
+import Image from "next/image";
 import type { Brand } from "@/lib/types";
 import type { Metadata } from "next";
 
@@ -56,18 +58,45 @@ export default async function ComparePage() {
                 label: "Gerolsteiner vs Topo Chico",
               },
               { a: "voss", b: "smartwater", label: "Voss vs Smartwater" },
-            ].map((pair) => (
-              <a
-                key={pair.label}
-                href={`/compare/${pair.a}-vs-${pair.b}`}
-                className="glass-card p-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex items-center justify-between group"
-              >
-                <span className="font-medium group-hover:text-ocean-surface transition-colors">
-                  {pair.label}
-                </span>
-                <span className="text-sm text-primary">Compare →</span>
-              </a>
-            ))}
+            ].map((pair) => {
+              const imgA = getBrandImage(pair.a);
+              const imgB = getBrandImage(pair.b);
+              return (
+                <a
+                  key={pair.label}
+                  href={`/compare/${pair.a}-vs-${pair.b}`}
+                  className="glass-card p-4 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex items-center gap-3 group"
+                >
+                  <div className="flex items-center gap-1 shrink-0">
+                    {imgA && (
+                      <Image
+                        src={imgA}
+                        alt={pair.a}
+                        width={20}
+                        height={50}
+                        className="object-contain h-[40px] w-auto"
+                        unoptimized
+                      />
+                    )}
+                    <span className="text-xs text-muted-foreground mx-1">vs</span>
+                    {imgB && (
+                      <Image
+                        src={imgB}
+                        alt={pair.b}
+                        width={20}
+                        height={50}
+                        className="object-contain h-[40px] w-auto"
+                        unoptimized
+                      />
+                    )}
+                  </div>
+                  <span className="font-medium group-hover:text-ocean-surface transition-colors flex-1">
+                    {pair.label}
+                  </span>
+                  <span className="text-sm text-primary shrink-0">Compare</span>
+                </a>
+              );
+            })}
           </div>
         </ScrollReveal>
       </section>

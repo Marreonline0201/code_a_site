@@ -174,10 +174,14 @@ export default function SettingsPage() {
                   type="number"
                   min={20}
                   max={500}
-                  value={profile?.weight ?? 70}
-                  onChange={(e) =>
-                    updateField("weight", parseFloat(e.target.value) || 70)
-                  }
+                  value={profile?.weight ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    updateField("weight", val === "" ? 0 : parseFloat(val));
+                  }}
+                  onBlur={() => {
+                    if (!profile?.weight || profile.weight < 20) updateField("weight", 70);
+                  }}
                   className="flex-1"
                 />
                 <div className="flex gap-1">
@@ -275,13 +279,14 @@ export default function SettingsPage() {
                 min={500}
                 max={10000}
                 step={50}
-                value={profile?.daily_goal ?? 2500}
-                onChange={(e) =>
-                  updateField(
-                    "daily_goal",
-                    parseInt(e.target.value, 10) || 2500
-                  )
-                }
+                value={profile?.daily_goal ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  updateField("daily_goal", val === "" ? 0 : parseInt(val, 10));
+                }}
+                onBlur={() => {
+                  if (!profile?.daily_goal || profile.daily_goal < 500) updateField("daily_goal", 2500);
+                }}
               />
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

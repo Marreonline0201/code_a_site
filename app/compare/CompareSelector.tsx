@@ -2,6 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { CountUp } from "@/components/animation/CountUp";
+import { getBrandImage } from "@/lib/brand-images";
+import Image from "next/image";
 import type { Brand } from "@/lib/types";
 
 interface CompareSelectorProps {
@@ -60,11 +62,12 @@ export function CompareSelector({ brands }: CompareSelectorProps) {
         <div className="flex flex-wrap gap-2">
           {brands.map((brand) => {
             const isSelected = selectedSlugs.includes(brand.slug);
+            const bottleImg = getBrandImage(brand.slug);
             return (
               <button
                 key={brand.slug}
                 onClick={() => toggleBrand(brand.slug)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                   isSelected
                     ? "bg-primary text-primary-foreground shadow-md"
                     : "glass-card hover:shadow-md"
@@ -75,6 +78,16 @@ export function CompareSelector({ brands }: CompareSelectorProps) {
                 }`}
                 disabled={!isSelected && selectedSlugs.length >= 4}
               >
+                {bottleImg && (
+                  <Image
+                    src={bottleImg}
+                    alt=""
+                    width={12}
+                    height={30}
+                    className="object-contain h-[24px] w-auto shrink-0"
+                    unoptimized
+                  />
+                )}
                 {brand.name}
               </button>
             );
@@ -91,19 +104,32 @@ export function CompareSelector({ brands }: CompareSelectorProps) {
                 <th className="text-left py-4 px-4 text-sm font-semibold">
                   Mineral
                 </th>
-                {selectedBrands.map((brand) => (
-                  <th
-                    key={brand.slug}
-                    className="text-center py-4 px-4 text-sm font-semibold"
-                  >
-                    <a
-                      href={`/brands/${brand.slug}`}
-                      className="hover:text-ocean-surface transition-colors"
+                {selectedBrands.map((brand) => {
+                  const headerImg = getBrandImage(brand.slug);
+                  return (
+                    <th
+                      key={brand.slug}
+                      className="text-center py-4 px-4 text-sm font-semibold"
                     >
-                      {brand.name}
-                    </a>
-                  </th>
-                ))}
+                      <a
+                        href={`/brands/${brand.slug}`}
+                        className="inline-flex flex-col items-center gap-1 hover:text-ocean-surface transition-colors"
+                      >
+                        {headerImg && (
+                          <Image
+                            src={headerImg}
+                            alt={`${brand.name} bottle`}
+                            width={24}
+                            height={60}
+                            className="object-contain h-[48px] w-auto"
+                            unoptimized
+                          />
+                        )}
+                        {brand.name}
+                      </a>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>

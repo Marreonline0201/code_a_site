@@ -2,8 +2,20 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 const PUBLIC_PAGE_PATHS = new Set(["/", "/login", "/register", "/signup"]);
-const PUBLIC_PAGE_PREFIXES = ["/auth"];
-const PUBLIC_API_PREFIXES = ["/api/auth"];
+const PUBLIC_PAGE_PREFIXES = [
+  "/auth",
+  "/brands",
+  "/minerals",
+  "/compare",
+  "/best",
+  "/blog",
+  "/about",
+  "/privacy",
+  "/terms",
+  "/tap-water",
+  "/go/",
+];
+const PUBLIC_API_PREFIXES = ["/api/auth", "/api/brands", "/api/minerals", "/api/water-quality"];
 
 function isPublicPagePath(pathname: string) {
   if (PUBLIC_PAGE_PATHS.has(pathname)) {
