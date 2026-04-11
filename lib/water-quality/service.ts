@@ -174,7 +174,7 @@ export function buildProbabilitySummary(samples: WaterSample[]) {
     overall = "unknown";
   }
 
-  const leadRisk =
+  const leadRisk: "low" | "elevated" | "high" | "unknown" =
     distribution.high >= distribution.elevated &&
     distribution.high >= distribution.low
       ? "high"
