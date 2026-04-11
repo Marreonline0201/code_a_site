@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Menu, X, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -50,7 +51,8 @@ export function Header() {
         className="pointer-events-auto mx-auto flex h-14 max-w-7xl items-center justify-between rounded-[1.75rem] border border-border/70 bg-background/75 px-4 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-all duration-300 md:px-5"
       >
         {/* Logo */}
-        <Link href="/" className="text-xl font-bold">
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold">
+          <Image src="/images/logo.png" alt="" width={28} height={28} className="w-7 h-7" />
           <span>MineralWater</span>
         </Link>
 
