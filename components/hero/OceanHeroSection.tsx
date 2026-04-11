@@ -23,7 +23,7 @@ const bottles = [
   { name: "Flow", origin: "Canada · Still", image: "/images/flow.png" },
 ];
 
-const TOTAL_FRAMES = 60;
+const TOTAL_FRAMES = 120;
 const FRAME_W = 960;
 const FRAME_H = 540;
 
