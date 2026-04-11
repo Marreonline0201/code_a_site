@@ -1,88 +1,31 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import Head from "next/head";
 
-/* ── Bottle data with local images ──
- *
- *  x / y        : base position as % of hero width/height
- *  rotation     : initial tilt in degrees
- *  scale        : visual size (doubles as perceived depth — smaller = deeper)
- *  bobDuration  : seconds for one full bob cycle (keeps bottles out of sync)
- *  bobDelay     : animation-delay offset in seconds
- *  parallaxRate : how many px the bottle drifts per 100px of scroll progress
- *                 (smaller scale bottles drift less — they're "deeper")
- *  opacity      : base opacity — slight variation sells the depth illusion
- */
-const bottles: Array<{
-  name: string;
-  image: string;
-  x: number;
-  y: number;
-  rotation: number;
-  scale: number;
-  bobDuration: number;
-  bobDelay: number;
-  parallaxRate: number;
-  opacity: number;
-}> = [
-  { name: "Evian",          image: "/images/evian.png",          x: 5,  y: 52, rotation: -14, scale: 0.78, bobDuration: 5.8, bobDelay: 0.0, parallaxRate: 28, opacity: 0.92 },
-  { name: "Fiji",           image: "/images/fiji.png",           x: 20, y: 61, rotation:  11, scale: 0.92, bobDuration: 6.4, bobDelay: 1.1, parallaxRate: 38, opacity: 0.96 },
-  { name: "Gerolsteiner",   image: "/images/gerolsteiner.png",   x: 38, y: 47, rotation:  -7, scale: 0.72, bobDuration: 7.1, bobDelay: 0.6, parallaxRate: 22, opacity: 0.82 },
-  { name: "Topo Chico",     image: "/images/topo-chico.png",     x: 57, y: 59, rotation:  13, scale: 1.00, bobDuration: 5.3, bobDelay: 1.8, parallaxRate: 44, opacity: 1.00 },
-  { name: "Liquid Death",   image: "/images/liquid-death.png",   x: 74, y: 48, rotation: -19, scale: 0.80, bobDuration: 6.9, bobDelay: 0.3, parallaxRate: 32, opacity: 0.88 },
-  { name: "Mountain Valley",image: "/images/mountain-valley.png",x: 89, y: 57, rotation:   9, scale: 0.86, bobDuration: 6.2, bobDelay: 2.2, parallaxRate: 36, opacity: 0.94 },
+/* ── Bottle data ── */
+const bottles = [
+  { name: "Evian", origin: "France · Still", image: "/images/evian.png" },
+  { name: "Fiji", origin: "Fiji · Still", image: "/images/fiji.png" },
+  { name: "Gerolsteiner", origin: "Germany · Sparkling", image: "/images/gerolsteiner.png" },
+  { name: "Topo Chico", origin: "Mexico · Sparkling", image: "/images/topo-chico.png" },
+  { name: "Liquid Death", origin: "USA · Still & Sparkling", image: "/images/liquid-death.png" },
+  { name: "Mountain Valley", origin: "USA · Still & Sparkling", image: "/images/mountain-valley.png" },
 ];
 
 const TOTAL_FRAMES = 30;
 const FRAME_W = 960;
 const FRAME_H = 540;
 
-/* ── Single always-visible floating bottle ── */
-function FloatingBottle({
-  name, image, x, y, rotation, scale, bobDuration, bobDelay, parallaxRate, opacity, scrollY,
-}: {
-  name: string; image: string;
-  x: number; y: number; rotation: number; scale: number;
-  bobDuration: number; bobDelay: number; parallaxRate: number;
-  opacity: number; scrollY: number;
-}) {
-  // Parallax: bottles drift upward (negative Y) as user scrolls down.
-  // Rate is relative so deeper (smaller) bottles move less.
-  const parallaxOffset = -(scrollY * parallaxRate) / 100;
+/* ── Utility: clamp ── */
+function clamp(v: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, v));
+}
 
-  return (
-    <div
-      className="absolute pointer-events-none select-none"
-      style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        opacity,
-        // CSS custom property consumed by the bottleFloat keyframe in globals.css
-        ["--bottle-rotate" as string]: `${rotation}deg`,
-        // Parallax shift stacked on top of the CSS bob animation via a wrapper
-        transform: `translateY(${parallaxOffset}px) scale(${scale})`,
-        // Bob animation — still runs via CSS, parallax applied as inline transform wrapper
-        animation: `bottleFloat ${bobDuration}s ease-in-out infinite`,
-        animationDelay: `${bobDelay}s`,
-        filter: "drop-shadow(0 10px 28px rgba(0,0,0,0.45)) drop-shadow(0 2px 8px rgba(0,100,180,0.3))",
-        // Nudge transform-origin so rotation pivots from the bottle base
-        transformOrigin: "50% 85%",
-        willChange: "transform",
-      }}
-    >
-      <Image
-        src={image}
-        alt={`${name} water bottle`}
-        width={80}
-        height={200}
-        className="object-contain max-h-[140px] sm:max-h-[180px] md:max-h-[210px]"
-        unoptimized
-      />
-    </div>
-  );
+/* ── Utility: map a value from one range to 0–1, clamped ── */
+function rangeProgress(value: number, start: number, end: number) {
+  return clamp((value - start) / (end - start), 0, 1);
 }
 
 /* ── Main Hero ── */
@@ -93,10 +36,9 @@ export function OceanHeroSection() {
   const [loadProgress, setLoadProgress] = useState(0);
   const currentFrameRef = useRef(0);
   const rafRef = useRef<number>(0);
-  // Normalised scroll progress 0→1 for parallax (not the raw pixel value)
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [progress, setProgress] = useState(0); // 0 to 1 normalized scroll
 
-  // Extract frames progressively — show first frame ASAP
+  // ── Extract video frames ──
   useEffect(() => {
     const video = document.createElement("video");
     video.src = "/videos/ocean-hero.mp4";
@@ -114,42 +56,30 @@ export function OceanHeroSection() {
       offscreen.height = FRAME_H;
       const ctx = offscreen.getContext("2d")!;
 
-      // Set canvas size once
       const mainCanvas = canvasRef.current;
-      if (mainCanvas) {
-        mainCanvas.width = FRAME_W;
-        mainCanvas.height = FRAME_H;
-      }
+      if (mainCanvas) { mainCanvas.width = FRAME_W; mainCanvas.height = FRAME_H; }
 
       for (let i = 0; i < TOTAL_FRAMES; i++) {
         video.currentTime = (i / TOTAL_FRAMES) * duration;
-        await new Promise<void>((r) =>
-          video.addEventListener("seeked", () => r(), { once: true })
-        );
+        await new Promise<void>((r) => video.addEventListener("seeked", () => r(), { once: true }));
         ctx.drawImage(video, 0, 0, FRAME_W, FRAME_H);
         const bitmap = await createImageBitmap(offscreen);
         framesRef.current.push(bitmap);
 
-        // Draw first frame immediately so user sees something
         if (i === 0 && mainCanvas) {
-          const mainCtx = mainCanvas.getContext("2d");
-          mainCtx?.drawImage(bitmap, 0, 0);
+          mainCanvas.getContext("2d")?.drawImage(bitmap, 0, 0);
         }
-
         setLoadProgress((i + 1) / TOTAL_FRAMES);
       }
     };
 
-    if (video.readyState >= 1) {
-      extract();
-    } else {
-      video.addEventListener("loadeddata", extract, { once: true });
-    }
+    if (video.readyState >= 1) extract();
+    else video.addEventListener("loadeddata", extract, { once: true });
 
     return () => { video.pause(); video.src = ""; };
   }, []);
 
-  // Scroll-driven canvas scrubbing + parallax progress
+  // ── Scroll handler: scrub video + track progress ──
   useEffect(() => {
     const onScroll = () => {
       cancelAnimationFrame(rafRef.current);
@@ -161,144 +91,264 @@ export function OceanHeroSection() {
 
         const rect = section.getBoundingClientRect();
         const scrollRange = section.offsetHeight - window.innerHeight;
-        const progress = Math.max(0, Math.min(1, -rect.top / scrollRange));
-
-        // Update parallax state — raw scroll pixels relative to section start
-        const rawScrolled = Math.max(0, -rect.top);
-        setScrollProgress(rawScrolled);
+        const p = clamp(-rect.top / scrollRange, 0, 1);
+        setProgress(p);
 
         if (frames.length === 0) return;
-        const frameIndex = Math.min(
-          Math.floor(progress * frames.length),
-          frames.length - 1
-        );
-
+        const frameIndex = Math.min(Math.floor(p * frames.length), frames.length - 1);
         if (frameIndex !== currentFrameRef.current && frames[frameIndex]) {
           currentFrameRef.current = frameIndex;
-          const ctx = canvas.getContext("2d");
-          ctx?.drawImage(frames[frameIndex], 0, 0);
+          canvas.getContext("2d")?.drawImage(frames[frameIndex], 0, 0);
         }
       });
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      cancelAnimationFrame(rafRef.current);
-    };
+    return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(rafRef.current); };
   }, []);
+
+  // ── Computed scroll-driven values ──
+  // Phase 1: 0-15% — title enters
+  const titleOpacity = rangeProgress(progress, 0, 0.08);
+  const titleY = (1 - rangeProgress(progress, 0, 0.12)) * 60; // slides up from 60px
+
+  // Phase 2: 10-25% — "Water" word and subtitle enter
+  const waterOpacity = rangeProgress(progress, 0.08, 0.18);
+  const subtitleOpacity = rangeProgress(progress, 0.12, 0.22);
+  const ctaOpacity = rangeProgress(progress, 0.18, 0.28);
+
+  // Phase 3: 25-35% — text shifts left, bottle zone activates
+  const textShift = rangeProgress(progress, 0.25, 0.38);
+  const textX = textShift * -15; // shift left by 15% (percentage of viewport)
+  const textScale = 1 - textShift * 0.15; // shrink slightly
+
+  // Phase 4: 35-95% — bottles appear one by one
+  const BOTTLE_START = 0.33;
+  const BOTTLE_END = 0.92;
+  const bottleRange = BOTTLE_END - BOTTLE_START;
+  const perBottle = bottleRange / bottles.length;
+
+  // Which bottle is active
+  const activeBottleIndex = useMemo(() => {
+    if (progress < BOTTLE_START) return -1;
+    if (progress >= BOTTLE_END) return bottles.length - 1;
+    return Math.floor((progress - BOTTLE_START) / perBottle);
+  }, [progress, perBottle]);
+
+  // Per-bottle progress (0 to 1 within each bottle's range)
+  const bottleProgress = useMemo(() => {
+    if (activeBottleIndex < 0) return 0;
+    const bottleStart = BOTTLE_START + activeBottleIndex * perBottle;
+    return rangeProgress(progress, bottleStart, bottleStart + perBottle);
+  }, [progress, activeBottleIndex, perBottle]);
+
+  // Phase 5: 92-100% — fade everything out
+  const fadeOut = 1 - rangeProgress(progress, 0.92, 1);
 
   const loaded = loadProgress >= 1;
 
+  // Scroll hint visibility
+  const scrollHintOpacity = 1 - rangeProgress(progress, 0, 0.05);
+
   return (
-    <>
-      {/* Preload the video for faster download */}
-      <Head>
-        <link rel="preload" href="/videos/ocean-hero.mp4" as="video" type="video/mp4" />
-      </Head>
+    <section ref={sectionRef} className="relative w-full h-[500svh]">
+      <div className="sticky top-0 h-[100svh] min-h-[600px] max-h-[1100px] overflow-hidden">
 
-      <section ref={sectionRef} className="relative w-full h-[300svh]">
-        <div className="sticky top-0 h-[100svh] min-h-[600px] max-h-[1100px] overflow-hidden">
+        {/* ── Canvas (video) ── */}
+        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" style={{ zIndex: 1 }} />
 
-          {/* ── Canvas ── */}
-          <canvas ref={canvasRef}
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ zIndex: 1 }} />
+        {/* ── Gradient fallback ── */}
+        <div className="absolute inset-0" style={{
+          background: "linear-gradient(180deg, #87CEEB 0%, #5BB8E6 18%, #2E9BD6 35%, #1a8ac4 48%, #0d7ab3 55%, #0a6fa6 62%, #085d8e 72%, #064d78 82%, #043d62 92%, #022d4f 100%)",
+          transition: "opacity 0.5s ease", opacity: loaded ? 0 : 1,
+        }}>
+          {!loaded && (
+            <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute inset-0 animate-pulse" style={{ animation: "shimmer 2s ease-in-out infinite" }} />
+            </div>
+          )}
+        </div>
 
-          {/* ── Gradient fallback + loading shimmer ── */}
-          <div className="absolute inset-0" style={{
-            background: `linear-gradient(180deg, #87CEEB 0%, #5BB8E6 18%, #2E9BD6 35%, #1a8ac4 48%, #0d7ab3 55%, #0a6fa6 62%, #085d8e 72%, #064d78 82%, #043d62 92%, #022d4f 100%)`,
-            transition: "opacity 0.5s ease",
-            opacity: loaded ? 0 : 1,
-          }}>
-            {!loaded && (
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-white/5 to-transparent"
-                  style={{ animation: "shimmer 2s ease-in-out infinite" }} />
-              </div>
-            )}
+        {/* ── Overlay ── */}
+        <div className="absolute inset-0" style={{
+          background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 30%, rgba(2,30,50,0.35) 100%)",
+          zIndex: 2,
+        }} />
+
+        {/* ── Text content — scroll-driven transforms ── */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center px-6 md:px-12"
+          style={{
+            zIndex: 10,
+            opacity: fadeOut,
+            transform: `translateX(${textX}vw) scale(${textScale})`,
+            transition: "transform 0.1s linear",
+          }}
+        >
+          {/* Title line 1 */}
+          <h1
+            className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white text-center drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+            style={{
+              fontFamily: "var(--font-playfair), Georgia, serif",
+              opacity: titleOpacity,
+              transform: `translateY(${titleY}px)`,
+            }}
+          >
+            Find Your Perfect
+          </h1>
+
+          {/* Title line 2 — "Water" with gradient */}
+          <span
+            className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold tracking-tight text-center drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
+            style={{
+              fontFamily: "var(--font-playfair), Georgia, serif",
+              opacity: waterOpacity,
+              transform: `translateY(${(1 - waterOpacity) * 30}px) scale(${0.9 + waterOpacity * 0.1})`,
+              backgroundImage: "linear-gradient(135deg, #7dd3fc, #38bdf8, #0ea5e9, #0284c7)",
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+            }}
+          >
+            Water
+          </span>
+
+          {/* Subtitle */}
+          <p
+            className="mt-6 max-w-lg text-base sm:text-lg text-white/85 leading-relaxed text-center drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]"
+            style={{ opacity: subtitleOpacity, transform: `translateY(${(1 - subtitleOpacity) * 20}px)` }}
+          >
+            Compare mineral water brands by mineral content.
+            <br className="hidden sm:block" />
+            Track your hydration. Discover what&apos;s in every bottle.
+          </p>
+
+          {/* CTA Buttons */}
+          <div
+            className="mt-8 flex flex-wrap gap-4 justify-center"
+            style={{ opacity: ctaOpacity, transform: `translateY(${(1 - ctaOpacity) * 15}px)` }}
+          >
+            <Link href="/brands" className="px-8 py-3.5 bg-white text-[#053d66] font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105">
+              Explore Brands
+            </Link>
+            <Link href="/tracker" className="px-8 py-3.5 border-2 border-white/30 text-white font-semibold rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/15 hover:border-white/50 hover:scale-105">
+              Start Tracking
+            </Link>
           </div>
+        </div>
 
-          {/* ── Overlay ── */}
-          <div className="absolute inset-0" style={{
-            background: "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 40%, rgba(2,30,50,0.3) 100%)",
-            zIndex: 2,
-          }} />
+        {/* ── Bottle showcase — one at a time, scroll-driven ── */}
+        <div
+          className="absolute inset-0 flex items-center justify-end pr-[5%] md:pr-[10%]"
+          style={{ zIndex: 8, opacity: fadeOut }}
+          aria-hidden="true"
+        >
+          {bottles.map((bottle, i) => {
+            const isActive = i === activeBottleIndex;
+            const isPast = i < activeBottleIndex;
+            const isFuture = i > activeBottleIndex;
 
-          {/* ── Bottles — all visible simultaneously, scattered & floating ── */}
-          <div className="absolute inset-0" style={{ zIndex: 5 }} aria-hidden="true">
-            {bottles.map((bottle) => (
-              <FloatingBottle
+            // Entry: slide up from below + fade in (0-40% of bottle's range)
+            // Hold: visible and centered (40-70%)
+            // Exit: slide up + fade out (70-100%)
+            let opacity = 0;
+            let translateY = 80;
+            let scale = 0.85;
+
+            if (isActive) {
+              const entry = rangeProgress(bottleProgress, 0, 0.35);
+              const exit = rangeProgress(bottleProgress, 0.7, 1);
+
+              opacity = entry * (1 - exit);
+              translateY = (1 - entry) * 80 + exit * -60;
+              scale = 0.85 + entry * 0.15 - exit * 0.1;
+            } else if (isPast) {
+              opacity = 0;
+              translateY = -80;
+            } else if (isFuture) {
+              opacity = 0;
+              translateY = 100;
+            }
+
+            return (
+              <div
                 key={bottle.name}
-                name={bottle.name}
-                image={bottle.image}
-                x={bottle.x}
-                y={bottle.y}
-                rotation={bottle.rotation}
-                scale={bottle.scale}
-                bobDuration={bottle.bobDuration}
-                bobDelay={bottle.bobDelay}
-                parallaxRate={bottle.parallaxRate}
-                opacity={bottle.opacity}
-                scrollY={scrollProgress}
+                className="absolute flex flex-col items-center"
+                style={{
+                  opacity,
+                  transform: `translateY(${translateY}px) scale(${scale})`,
+                  filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.5))",
+                  willChange: "transform, opacity",
+                  right: "8%",
+                }}
+              >
+                <Image
+                  src={bottle.image}
+                  alt={bottle.name}
+                  width={120}
+                  height={300}
+                  className="object-contain max-h-[220px] sm:max-h-[280px] md:max-h-[340px]"
+                  unoptimized
+                  priority={i === 0}
+                />
+                <div className="mt-4 text-center">
+                  <p className="text-lg sm:text-xl font-bold text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]"
+                    style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+                    {bottle.name}
+                  </p>
+                  <p className="text-xs sm:text-sm text-white/50 tracking-wider uppercase mt-1">
+                    {bottle.origin}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* ── Bottle progress dots ── */}
+        {progress > BOTTLE_START && progress < BOTTLE_END && (
+          <div
+            className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2"
+            style={{ zIndex: 20, opacity: fadeOut }}
+          >
+            {bottles.map((_, i) => (
+              <div
+                key={i}
+                className="rounded-full transition-all duration-300"
+                style={{
+                  width: i === activeBottleIndex ? 10 : 6,
+                  height: i === activeBottleIndex ? 10 : 6,
+                  backgroundColor: i === activeBottleIndex ? "white" : "rgba(255,255,255,0.3)",
+                }}
               />
             ))}
           </div>
+        )}
 
-          {/* ── Content ── */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4" style={{ zIndex: 10 }}>
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)]"
-              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
-              Find Your Perfect<br />
-              <span className="bg-clip-text text-transparent" style={{
-                backgroundImage: "linear-gradient(135deg, #7dd3fc, #38bdf8, #0ea5e9, #0284c7)",
-                WebkitBackgroundClip: "text",
-              }}>Water</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-base sm:text-lg text-white/85 leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.4)]">
-              Compare mineral water brands by mineral content.
-              <br className="hidden sm:block" />
-              Track your hydration. Discover what&apos;s in every bottle.
-            </p>
-            <div className="mt-4 h-6 overflow-hidden">
-              <span className="text-sm font-medium tracking-[0.2em] uppercase text-white/40">
-                {bottles.map((b) => b.name).join(" · ")}
-              </span>
-            </div>
-            <div className="mt-8 flex flex-wrap gap-4 justify-center">
-              <Link href="/brands" className="px-8 py-3.5 bg-white text-[#053d66] font-semibold rounded-full transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105">
-                Explore Brands
-              </Link>
-              <Link href="/tracker" className="px-8 py-3.5 border-2 border-white/30 text-white font-semibold rounded-full backdrop-blur-sm transition-all duration-300 hover:bg-white/15 hover:border-white/50 hover:scale-105">
-                Start Tracking
-              </Link>
-            </div>
+        {/* ── Bottom fade ── */}
+        <div className="absolute bottom-0 left-0 right-0 h-32" style={{
+          background: "linear-gradient(to bottom, transparent, var(--background))", zIndex: 15,
+        }} />
+
+        {/* ── Scroll hint ── */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2"
+          style={{ zIndex: 20, opacity: scrollHintOpacity }}>
+          <span className="text-xs text-white/50 tracking-widest uppercase">Scroll to explore</span>
+          <div className="w-5 h-8 rounded-full border-2 border-white/30 flex items-start justify-center p-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" />
           </div>
-
-          {/* ── Bottom fade ── */}
-          <div className="absolute bottom-0 left-0 right-0 h-32" style={{
-            background: "linear-gradient(to bottom, transparent, var(--background))", zIndex: 15,
-          }} />
-
-          {/* ── Scroll hint ── */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2" style={{ zIndex: 20 }}>
-            <span className="text-xs text-white/50 tracking-widest uppercase">Scroll to explore</span>
-            <div className="w-5 h-8 rounded-full border-2 border-white/30 flex items-start justify-center p-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-bounce" />
-            </div>
-          </div>
-
-          {/* ── Loading bar ── */}
-          {!loaded && (
-            <div className="absolute bottom-0 left-0 right-0 h-1" style={{ zIndex: 25 }}>
-              <div className="h-full bg-white/40 transition-all duration-300 ease-out"
-                style={{ width: `${loadProgress * 100}%` }} />
-            </div>
-          )}
-
         </div>
-      </section>
-    </>
+
+        {/* ── Loading bar ── */}
+        {!loaded && (
+          <div className="absolute bottom-0 left-0 right-0 h-1" style={{ zIndex: 25 }}>
+            <div className="h-full bg-white/40 transition-all duration-300 ease-out"
+              style={{ width: `${loadProgress * 100}%` }} />
+          </div>
+        )}
+
+      </div>
+    </section>
   );
 }
