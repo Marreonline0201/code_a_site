@@ -40,7 +40,7 @@ export async function GET(
     );
   }
 
-  if (!pwsid || pwsid.length < 4 || pwsid.length > 12) {
+  if (!pwsid || !/^[A-Z0-9]{4,12}$/i.test(pwsid)) {
     return NextResponse.json(
       { error: "Invalid PWSID format." },
       { status: 400 },

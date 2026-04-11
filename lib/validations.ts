@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sanitizeText } from "@/lib/sanitize";
 
 const slugRegex = /^[a-z0-9][a-z0-9-]{0,98}[a-z0-9]$/;
 
@@ -27,7 +28,7 @@ export const registerSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .transform((v) => v.replace(/<[^>]*>/g, "").trim()),
+    .transform((v) => sanitizeText(v)),
 });
 
 export const loginSchema = z.object({
@@ -38,13 +39,13 @@ export const loginSchema = z.object({
 export const hydrationEntrySchema = z.object({
   amount: z.number().int().min(1).max(5000),
   brand_slug: slugSchema.nullable().optional().default(null),
-  activity: z.string().max(50).nullable().optional().default(null),
+  activity: z.string().max(50).transform((v) => sanitizeText(v)).nullable().optional().default(null),
   note: z
     .string()
     .max(200)
     .optional()
     .default("")
-    .transform((v) => v.replace(/<[^>]*>/g, "")),
+    .transform((v) => sanitizeText(v)),
 });
 
 export const profileUpdateSchema = z.object({
@@ -52,7 +53,7 @@ export const profileUpdateSchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .transform((v) => v.replace(/<[^>]*>/g, "").trim())
+    .transform((v) => sanitizeText(v))
     .optional(),
   weight: z.number().min(20).max(500).optional(),
   unit: z.enum(["kg", "lbs"]).optional(),
