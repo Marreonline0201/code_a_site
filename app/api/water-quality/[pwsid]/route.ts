@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { fetchWaterSystem, fetchViolations } from "@/lib/epa/client";
-import {
-  normalizeWaterSystem,
-  normalizeViolation,
-  filterRecentViolations,
-} from "@/lib/epa/normalize";
-import type { WaterSystemDetailResult } from "@/lib/epa/types";
+import { getWaterSystemDetail } from "@/lib/epa/client";
 
 export const dynamic = "force-dynamic";
-
-// Simple in-memory cache
-const cache = new Map<string, { data: WaterSystemDetailResult; expiresAt: number }>();
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export async function GET(
   request: NextRequest,
@@ -20,84 +10,68 @@ export async function GET(
 ) {
   const { pwsid } = await params;
 
-  // Rate limit
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    request.headers.get("x-real-ip") ??
-    "anonymous";
-  const { allowed, retryAfterMs } = rateLimit(`epa-detail:${ip}`, {
-    limit: 30,
-    windowMs: 60_000,
-  });
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous";
+  const { allowed, retryAfterMs } = rateLimit(`epa-detail:${ip}`, { limit: 30, windowMs: 60_000 });
 
   if (!allowed) {
     return NextResponse.json(
-      { error: "Too many requests. Please try again shortly." },
-      {
-        status: 429,
-        headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) },
-      },
+      { error: "Too many requests." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) } },
     );
   }
 
   if (!pwsid || !/^[A-Z0-9]{4,12}$/i.test(pwsid)) {
-    return NextResponse.json(
-      { error: "Invalid PWSID format." },
-      { status: 400 },
-    );
-  }
-
-  // Check cache
-  const cached = cache.get(pwsid);
-  if (cached && Date.now() < cached.expiresAt) {
-    return NextResponse.json(cached.data, {
-      headers: { "X-Cache": "HIT" },
-    });
+    return NextResponse.json({ error: "Invalid PWSID format." }, { status: 400 });
   }
 
   try {
-    // Fetch system info and violations in parallel
-    const [rawSystem, rawViolations] = await Promise.all([
-      fetchWaterSystem(pwsid),
-      fetchViolations(pwsid, 200),
-    ]);
+    const system = await getWaterSystemDetail(pwsid);
 
-    if (!rawSystem) {
-      return NextResponse.json(
-        { error: `Water system ${pwsid} not found.` },
-        { status: 404 },
-      );
+    if (!system) {
+      return NextResponse.json({ error: "Water system not found." }, { status: 404 });
     }
 
-    const violations = rawViolations.map(normalizeViolation);
-    const system = normalizeWaterSystem(rawSystem, rawViolations);
-    const recentViolations = filterRecentViolations(violations);
+    const populationServed = system.PopulationServedCount ? parseInt(system.PopulationServedCount, 10) : null;
+    const hasHealthViolation = system.HealthFlag === "Yes";
+    const isSeriousViolator = system.SeriousViolator === "Yes";
+    const hasCurrentViolation = system.CurrVioFlag === "1";
 
-    const result: WaterSystemDetailResult = {
-      system,
-      violations,
-      recentViolations,
-      timestamp: new Date().toISOString(),
-    };
+    let status: "good" | "watch" | "alert" = "good";
+    if (isSeriousViolator || hasHealthViolation) status = "alert";
+    else if (hasCurrentViolation || parseInt(system.QtrsWithVio ?? "0", 10) > 4) status = "watch";
 
-    // Cache
-    if (cache.size > 500) {
-      const now = Date.now();
-      for (const [k, v] of cache) {
-        if (now > v.expiresAt) cache.delete(k);
-      }
-    }
-    cache.set(pwsid, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
-
-    return NextResponse.json(result, {
-      headers: {
-        "X-Cache": "MISS",
-        "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600",
+    return NextResponse.json({
+      system: {
+        pwsid: system.PWSId,
+        name: system.PWSName,
+        type: system.PWSTypeDesc,
+        source: system.PrimarySourceDesc,
+        populationServed,
+        state: system.StateCode,
+        citiesServed: system.CitiesServed,
+        countiesServed: system.CountiesServed,
+        owner: system.OwnerDesc,
+        serviceArea: system.ServiceAreaTypeDesc,
+        status,
+        isSeriousViolator,
+        hasHealthViolation,
+        hasCurrentViolation,
+        leadViolation: !!(system.PbViol && system.PbViol !== "0"),
+        copperViolation: !!(system.CuViol && system.CuViol !== "0"),
+        quartersWithViolations: parseInt(system.QtrsWithVio ?? "0", 10),
+        rulesViolated3yr: parseInt(system.RulesVio3yr ?? "0", 10),
+        contaminantsInCurrentViolation: system.SDWAContaminantsInCurViol?.split(",").filter(Boolean) ?? [],
+        contaminantsInViolation3yr: system.SDWAContaminantsInViol3yr?.split(",").filter(Boolean) ?? [],
+        violationCategories: system.ViolationCategories?.split(",").filter(Boolean) ?? [],
+        complianceHistory: system.SDWA3yrComplQtrsHistory,
+        detailUrl: system.DfrUrl,
       },
+      timestamp: new Date().toISOString(),
     });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch water system details.";
-    return NextResponse.json({ error: message }, { status: 502 });
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to fetch water system details." },
+      { status: 502 },
+    );
   }
 }

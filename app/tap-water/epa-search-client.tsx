@@ -1,599 +1,336 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import {
-  Search,
-  Droplets,
-  Users,
-  AlertTriangle,
-  CheckCircle,
-  ChevronLeft,
-  ExternalLink,
-  Shield,
-  MapPin,
-  Activity,
-} from "lucide-react";
-import { useWaterQualitySearch } from "@/lib/epa/use-water-quality-search";
-import type { WaterSystem, Violation, ViolationSeverity } from "@/lib/epa/types";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useCallback } from "react";
+import { Search, AlertTriangle, CheckCircle, Eye, ExternalLink, Droplets, Users, MapPin, Shield } from "lucide-react";
 
-/* ---------- Helpers ---------- */
-
-function formatPopulation(pop: number | null): string {
-  if (pop == null) return "Unknown";
-  if (pop >= 1_000_000) return `${(pop / 1_000_000).toFixed(1)}M`;
-  if (pop >= 1_000) return `${(pop / 1_000).toFixed(1)}K`;
-  return String(pop);
+interface WaterSystem {
+  pwsid: string;
+  name: string;
+  type: string;
+  source: string;
+  populationServed: number | null;
+  state: string;
+  citiesServed: string | null;
+  countiesServed: string | null;
+  owner: string;
+  serviceArea: string | null;
+  status: "good" | "watch" | "alert";
+  isSeriousViolator: boolean;
+  hasHealthViolation: boolean;
+  hasCurrentViolation: boolean;
+  leadViolation: boolean;
+  copperViolation: boolean;
+  quartersWithViolations: number;
+  rulesViolated3yr: number;
+  contaminantsInCurrentViolation: string[];
+  contaminantsInViolation3yr: string[];
+  violationCategories: string[];
+  complianceHistory: string;
+  detailUrl: string;
 }
 
-function sourceLabel(src: string): string {
-  const map: Record<string, string> = {
-    groundwater: "Groundwater",
-    surface: "Surface Water",
-    purchased: "Purchased",
-    unknown: "Unknown",
-  };
-  return map[src] ?? src;
+interface SearchResult {
+  systems: WaterSystem[];
+  query: { state?: string; county?: string; city?: string };
+  totalSystems: number;
 }
 
-function systemTypeLabel(t: string): string {
-  const map: Record<string, string> = {
-    community: "Community",
-    "non-transient": "Non-Transient",
-    transient: "Transient",
-    unknown: "Unknown",
-  };
-  return map[t] ?? t;
-}
+const US_STATES = [
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+  "VA","WA","WV","WI","WY","DC",
+];
 
-function severityColor(s: ViolationSeverity): string {
-  switch (s) {
-    case "serious":
-      return "text-red-600 dark:text-red-400";
-    case "minor":
-      return "text-amber-600 dark:text-amber-400";
-    case "informational":
-      return "text-blue-600 dark:text-blue-400";
-    default:
-      return "text-muted-foreground";
-  }
-}
-
-function severityBadgeVariant(
-  s: ViolationSeverity,
-): "destructive" | "secondary" | "outline" | "default" {
-  switch (s) {
-    case "serious":
-      return "destructive";
-    case "minor":
-      return "secondary";
-    default:
-      return "outline";
-  }
-}
-
-function healthBadge(system: WaterSystem) {
-  if (system.healthBasedViolationCount === 0 && system.violationCount === 0) {
+function StatusBadge({ status }: { status: WaterSystem["status"] }) {
+  if (status === "alert") {
     return (
-      <Badge variant="default" className="bg-emerald-600 text-white dark:bg-emerald-500">
-        <CheckCircle className="mr-1 size-3" />
-        No Violations
-      </Badge>
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+        <AlertTriangle className="size-3" />
+        Violations Found
+      </span>
     );
   }
-  if (system.healthBasedViolationCount > 0) {
+  if (status === "watch") {
     return (
-      <Badge variant="destructive">
-        <AlertTriangle className="mr-1 size-3" />
-        {system.healthBasedViolationCount} Health-Based
-      </Badge>
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+        <Eye className="size-3" />
+        Under Review
+      </span>
     );
   }
   return (
-    <Badge variant="secondary">
-      <Activity className="mr-1 size-3" />
-      {system.violationCount} Violation{system.violationCount !== 1 ? "s" : ""}
-    </Badge>
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20">
+      <CheckCircle className="size-3" />
+      Compliant
+    </span>
   );
 }
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "N/A";
-  try {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
+function SystemCard({ system }: { system: WaterSystem }) {
+  const [expanded, setExpanded] = useState(false);
 
-/* ---------- Sub-components ---------- */
-
-function SearchLoadingState() {
   return (
-    <div className="space-y-4">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Card key={i} className="glass-card">
-          <CardHeader>
-            <Skeleton className="h-5 w-56" />
-            <Skeleton className="h-4 w-72" />
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
+    <div className="glass-card p-5 transition-all duration-200 hover:shadow-lg">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base font-bold truncate">{system.name}</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {system.citiesServed ?? system.countiesServed ?? system.state} · {system.source}
+          </p>
+        </div>
+        <StatusBadge status={system.status} />
+      </div>
 
-function DetailLoadingState() {
-  return (
-    <div className="space-y-4">
-      <Card className="glass-card">
-        <CardHeader>
-          <Skeleton className="h-6 w-72" />
-          <Skeleton className="h-4 w-48" />
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-16 w-full" />
-        </CardContent>
-      </Card>
-      <Card className="glass-card">
-        <CardHeader>
-          <Skeleton className="h-5 w-40" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function StatField({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
-      <p className="flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
-        {icon}
-        {label}
-      </p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
-  );
-}
-
-function SystemCard({
-  system,
-  onSelect,
-}: {
-  system: WaterSystem;
-  onSelect: (pwsid: string) => void;
-}) {
-  return (
-    <Card
-      className="glass-card cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-ocean-surface/40"
-      onClick={() => onSelect(system.pwsid)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect(system.pwsid);
-        }
-      }}
-    >
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <CardTitle className="text-base">{system.name}</CardTitle>
-            <CardDescription>
-              {system.city ? `${system.city}, ` : ""}
-              {system.stateCode}
-              {system.county ? ` — ${system.county} County` : ""}
-              {" "}
-              <span className="font-mono text-xs text-muted-foreground/60">
-                ({system.pwsid})
-              </span>
-            </CardDescription>
+      {/* Quick stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div className="rounded-lg bg-muted/50 px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+            <Users className="size-3" /> Population
           </div>
-          {healthBadge(system)}
+          <p className="text-sm font-semibold">
+            {system.populationServed ? system.populationServed.toLocaleString() : "N/A"}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <StatField
-            label="Population"
-            value={formatPopulation(system.populationServed)}
-            icon={<Users className="size-3" />}
-          />
-          <StatField
-            label="Source"
-            value={sourceLabel(system.sourceType)}
-            icon={<Droplets className="size-3" />}
-          />
-          <StatField
-            label="Type"
-            value={systemTypeLabel(system.systemType)}
-            icon={<Shield className="size-3" />}
-          />
-          <StatField
-            label="Violations"
-            value={String(system.violationCount)}
-            icon={<AlertTriangle className="size-3" />}
-          />
+        <div className="rounded-lg bg-muted/50 px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+            <Droplets className="size-3" /> Source
+          </div>
+          <p className="text-sm font-semibold">{system.source}</p>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ViolationRow({ violation }: { violation: Violation }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="space-y-0.5">
-        <p className={`text-sm font-medium ${severityColor(violation.severity)}`}>
-          {violation.contaminantName}
-        </p>
-        <p className="text-xs text-muted-foreground">{violation.violationType}</p>
-        {violation.ruleName && (
-          <p className="text-xs text-muted-foreground/70">{violation.ruleName}</p>
-        )}
+        <div className="rounded-lg bg-muted/50 px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+            <Shield className="size-3" /> Violations (3yr)
+          </div>
+          <p className={`text-sm font-semibold ${system.rulesViolated3yr > 0 ? "text-red-500" : "text-green-600"}`}>
+            {system.rulesViolated3yr}
+          </p>
+        </div>
+        <div className="rounded-lg bg-muted/50 px-3 py-2">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
+            <MapPin className="size-3" /> Owner
+          </div>
+          <p className="text-sm font-semibold truncate">{system.owner}</p>
+        </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Badge variant={severityBadgeVariant(violation.severity)}>
-          {violation.severity}
-        </Badge>
-        {violation.isHealthBased && (
-          <Badge variant="destructive">
-            Health-Based
-          </Badge>
-        )}
-        <span className="text-xs text-muted-foreground">
-          {formatDate(violation.compliancePeriodBegin)}
-          {violation.compliancePeriodEnd
-            ? ` — ${formatDate(violation.compliancePeriodEnd)}`
-            : ""}
-        </span>
-      </div>
-    </div>
-  );
-}
 
-function SystemDetailView({
-  system,
-  violations,
-  recentViolations,
-  searchQuery,
-  onBack,
-}: {
-  system: WaterSystem;
-  violations: Violation[];
-  recentViolations: Violation[];
-  searchQuery: string;
-  onBack: () => void;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const displayViolations = showAll ? violations : recentViolations;
+      {/* Warnings */}
+      {(system.leadViolation || system.copperViolation || system.contaminantsInCurrentViolation.length > 0) && (
+        <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 p-3">
+          <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-1">Active Concerns:</p>
+          <ul className="text-xs text-red-600/80 dark:text-red-400/80 space-y-0.5">
+            {system.leadViolation && <li>· Lead violation detected</li>}
+            {system.copperViolation && <li>· Copper violation detected</li>}
+            {system.contaminantsInCurrentViolation.map((c) => (
+              <li key={c}>· {c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-  // Determine overall health color
-  const overallColor =
-    system.healthBasedViolationCount > 0
-      ? "border-red-500/30 bg-red-50/30 dark:bg-red-950/10"
-      : system.violationCount > 0
-        ? "border-amber-500/30 bg-amber-50/30 dark:bg-amber-950/10"
-        : "border-emerald-500/30 bg-emerald-50/30 dark:bg-emerald-950/10";
-
-  // Build EWG link
-  const zip = system.zipCode ?? searchQuery;
-  const ewgUrl = zip && /^\d{5}$/.test(zip)
-    ? `https://www.ewg.org/tapwater/search-results.php?zip5=${zip}`
-    : "https://www.ewg.org/tapwater/";
-
-  return (
-    <div className="space-y-4">
+      {/* Expandable detail */}
       <button
-        onClick={onBack}
-        className="flex items-center gap-1 text-sm text-ocean-surface hover:text-ocean-foam transition-colors"
+        onClick={() => setExpanded(!expanded)}
+        className="text-xs text-primary hover:underline mb-2"
       >
-        <ChevronLeft className="size-4" />
-        Back to results
+        {expanded ? "Hide details" : "Show more details"}
       </button>
 
-      {/* System overview */}
-      <Card className={`glass-card ${overallColor}`}>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <CardTitle className="text-xl">{system.name}</CardTitle>
-              <CardDescription className="flex items-center gap-1">
-                <MapPin className="size-3" />
-                {system.city ? `${system.city}, ` : ""}
-                {system.stateCode}
-                {system.county ? ` — ${system.county} County` : ""}
-              </CardDescription>
-            </div>
-            {healthBadge(system)}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <StatField
-              label="PWSID"
-              value={system.pwsid}
-              icon={<Shield className="size-3" />}
-            />
-            <StatField
-              label="Population Served"
-              value={formatPopulation(system.populationServed)}
-              icon={<Users className="size-3" />}
-            />
-            <StatField
-              label="Water Source"
-              value={sourceLabel(system.sourceType)}
-              icon={<Droplets className="size-3" />}
-            />
-            <StatField
-              label="System Type"
-              value={systemTypeLabel(system.systemType)}
-            />
-            <StatField
-              label="Total Violations"
-              value={String(violations.length)}
-              icon={<AlertTriangle className="size-3" />}
-            />
-            <StatField
-              label="Health-Based"
-              value={String(system.healthBasedViolationCount)}
-            />
+      {expanded && (
+        <div className="mt-3 pt-3 border-t border-border space-y-3 text-sm">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div><span className="text-muted-foreground">System ID:</span> {system.pwsid}</div>
+            <div><span className="text-muted-foreground">Type:</span> {system.type}</div>
+            <div><span className="text-muted-foreground">Counties:</span> {system.countiesServed ?? "N/A"}</div>
+            <div><span className="text-muted-foreground">Service Area:</span> {system.serviceArea ?? "N/A"}</div>
+            <div><span className="text-muted-foreground">Serious Violator:</span> {system.isSeriousViolator ? "Yes" : "No"}</div>
+            <div><span className="text-muted-foreground">Qtrs w/ Violations:</span> {system.quartersWithViolations}</div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <a href={ewgUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" className="gap-1">
-                <ExternalLink className="size-3" />
-                View on EWG Tap Water
-              </Button>
-            </a>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Violations list */}
-      <Card className="glass-card">
-        <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          {system.contaminantsInViolation3yr.length > 0 && (
             <div>
-              <CardTitle className="text-lg">
-                {showAll ? "All Violations" : "Recent Violations (Last 5 Years)"}
-              </CardTitle>
-              <CardDescription>
-                {displayViolations.length} violation
-                {displayViolations.length !== 1 ? "s" : ""} found
-                {!showAll && violations.length > recentViolations.length
-                  ? ` (${violations.length} total)`
-                  : ""}
-              </CardDescription>
+              <p className="text-xs text-muted-foreground mb-1">Contaminants in violation (3yr):</p>
+              <div className="flex flex-wrap gap-1">
+                {system.contaminantsInViolation3yr.map((c) => (
+                  <span key={c} className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs">{c}</span>
+                ))}
+              </div>
             </div>
-            {violations.length > recentViolations.length && (
-              <Button
-                variant="outline"
-                onClick={() => setShowAll(!showAll)}
-              >
-                {showAll ? "Show Recent Only" : "Show All Violations"}
-              </Button>
+          )}
+
+          {system.complianceHistory && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">3-Year Compliance History (quarters):</p>
+              <div className="flex gap-0.5">
+                {system.complianceHistory.split("").slice(0, 12).map((char, i) => (
+                  <div
+                    key={i}
+                    className={`w-4 h-4 rounded-sm text-[9px] flex items-center justify-center font-mono ${
+                      char === "V" || char === "S"
+                        ? "bg-red-500/20 text-red-600"
+                        : char === " " || char === "_"
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-green-500/20 text-green-600"
+                    }`}
+                    title={`Quarter ${i + 1}: ${char === "V" ? "Violation" : char === "S" ? "Serious" : "Compliant"}`}
+                  >
+                    {char === " " || char === "_" ? "·" : char}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">V = violation, S = serious, green = compliant</p>
+            </div>
+          )}
+
+          <a
+            href={system.detailUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            <ExternalLink className="size-3" />
+            View full EPA report
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function EpaSearchClient() {
+  const [selectedState, setSelectedState] = useState("");
+  const [county, setCounty] = useState("");
+  const [results, setResults] = useState<SearchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSearch = useCallback(async () => {
+    if (!selectedState) { setError("Please select a state."); return; }
+    setError("");
+    setLoading(true);
+    setResults(null);
+
+    try {
+      const params = new URLSearchParams({ state: selectedState });
+      if (county.trim()) params.set("county", county.trim().toUpperCase());
+
+      const res = await fetch(`/api/water-quality?${params.toString()}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Search failed");
+      }
+      const data: SearchResult = await res.json();
+      setResults(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Search failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedState, county]);
+
+  return (
+    <div>
+      {/* Search form */}
+      <div className="glass-card p-6 mb-8">
+        <h2 className="text-lg font-bold mb-1">Search Your Water System</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Find your local water utility&apos;s compliance record from the EPA&apos;s enforcement database.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <select
+            value={selectedState}
+            onChange={(e) => setSelectedState(e.target.value)}
+            className="h-11 px-3 rounded-xl border border-border bg-background text-sm outline-none focus:border-primary flex-1 sm:max-w-[200px]"
+          >
+            <option value="">Select state...</option>
+            {US_STATES.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            value={county}
+            onChange={(e) => setCounty(e.target.value)}
+            placeholder="County (optional, e.g. Los Angeles)"
+            className="h-11 px-4 rounded-xl border border-border bg-background text-sm outline-none focus:border-primary flex-1"
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+          />
+
+          <button
+            onClick={handleSearch}
+            disabled={loading || !selectedState}
+            className="h-11 px-6 rounded-xl bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Searching EPA...
+              </>
+            ) : (
+              <>
+                <Search className="size-4" />
+                Search
+              </>
             )}
+          </button>
+        </div>
+
+        {error && (
+          <p className="mt-3 text-sm text-red-500">{error}</p>
+        )}
+      </div>
+
+      {/* Results */}
+      {results && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold">
+              {results.totalSystems} Water System{results.totalSystems !== 1 ? "s" : ""} Found
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Source: EPA ECHO · SDWA Compliance Data
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
-          {displayViolations.length === 0 ? (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-50/50 px-4 py-6 text-center dark:bg-emerald-950/20">
-              <CheckCircle className="mx-auto size-8 text-emerald-600 dark:text-emerald-400" />
-              <p className="text-sm text-muted-foreground">
-                {showAll
-                  ? "No violations on record for this water system."
-                  : "No violations in the last 5 years. Great news!"}
-              </p>
+
+          {results.systems.length === 0 ? (
+            <div className="glass-card p-8 text-center">
+              <p className="text-muted-foreground">No water systems found. Try a different county or leave county blank to see all systems in the state.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {displayViolations.map((v) => (
-                <ViolationRow key={v.id} violation={v} />
+            <div className="space-y-4">
+              {results.systems.map((system) => (
+                <SystemCard key={system.pwsid} system={system} />
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
-/* ---------- Main component ---------- */
-
-export function EpaSearchClient() {
-  const {
-    search,
-    detail,
-    setQuery,
-    executeSearch,
-    fetchSystemDetail,
-    clearDetail,
-  } = useWaterQualitySearch();
-
-  const isSearching = search.phase === "loading";
-  const isDetailLoading = detail.phase === "loading";
-  const showDetail = detail.phase === "success" && detail.system;
-
-  const onSubmit = useCallback(
-    async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      await executeSearch();
-    },
-    [executeSearch],
-  );
-
-  const onSelectSystem = useCallback(
-    (pwsid: string) => {
-      fetchSystemDetail(pwsid);
-    },
-    [fetchSystemDetail],
-  );
-
-  // If we're showing the detail view, render that
-  if (showDetail) {
-    return (
-      <SystemDetailView
-        system={detail.system!}
-        violations={detail.violations}
-        recentViolations={detail.recentViolations}
-        searchQuery={search.query}
-        onBack={clearDetail}
-      />
-    );
-  }
-
-  if (isDetailLoading) {
-    return <DetailLoadingState />;
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Search */}
-      <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="text-lg">Search Water Systems</CardTitle>
-          <CardDescription>
-            Enter a 5-digit ZIP code (e.g. <span className="font-medium">10001</span>) or
-            2-letter state code (e.g. <span className="font-medium">NY</span>) to find
-            public water systems and their violations.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="flex flex-col gap-3 sm:flex-row" onSubmit={onSubmit}>
-            <Input
-              value={search.query}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
-              placeholder="ZIP code or state (e.g. 10001 or NY)"
-              aria-invalid={search.phase === "validation_error"}
-              disabled={isSearching}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={isSearching}>
-              <Search className="mr-1 size-4" />
-              {isSearching ? "Searching..." : "Search"}
-            </Button>
-          </form>
-          {search.errorMessage && (
-            <p
-              className={`mt-2 text-sm ${
-                search.phase === "validation_error"
-                  ? "text-destructive"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {search.errorMessage}
+          <div className="mt-6 p-4 rounded-xl bg-muted/30 border border-border">
+            <p className="text-xs text-muted-foreground">
+              Data from the EPA Enforcement & Compliance History Online (ECHO) database, Safe Drinking Water Act (SDWA) program.
+              For personalized contaminant reports, visit{" "}
+              <a href="https://www.ewg.org/tapwater/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                EWG Tap Water Database
+              </a>.
             </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Detail error */}
-      {detail.phase === "error" && (
-        <Card className="glass-card border-destructive/30">
-          <CardContent className="py-6">
-            <p className="text-sm text-destructive">{detail.errorMessage}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Idle state */}
-      {search.phase === "idle" && (
-        <Card className="glass-card">
-          <CardContent className="py-8 text-center">
-            <Droplets className="mx-auto mb-3 size-10 text-ocean-surface/60" />
-            <p className="text-sm text-muted-foreground">
-              Search the EPA Safe Drinking Water Information System (SDWIS) to find
-              your local water system and any drinking water violations.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Loading */}
-      {isSearching && <SearchLoadingState />}
-
-      {/* Error */}
-      {search.phase === "error" && (
-        <Card className="glass-card">
-          <CardHeader>
-            <CardTitle>Search Failed</CardTitle>
-            <CardDescription>
-              {search.errorMessage ?? "Could not reach the EPA database. Please try again."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => executeSearch()} variant="outline">
-              Retry
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Empty */}
-      {search.phase === "empty" && (
-        <Card className="glass-card">
-          <CardContent className="py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No water systems were found for{" "}
-              <span className="font-medium">{search.query}</span>. Try a different ZIP
-              code or state.
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Results */}
-      {search.phase === "success" && (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">
-              Water Systems
-              <span className="ml-2 text-base font-normal text-muted-foreground">
-                ({search.totalSystems} found)
-              </span>
-            </h2>
           </div>
-          <div className="space-y-3">
-            {search.systems.map((system) => (
-              <SystemCard
-                key={system.pwsid}
-                system={system}
-                onSelect={onSelectSystem}
-              />
-            ))}
-          </div>
-        </section>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!results && !loading && (
+        <div className="text-center py-12">
+          <Droplets className="size-12 mx-auto text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-semibold text-muted-foreground mb-2">Check Your Water Quality</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Select your state and optionally narrow by county to find water systems serving your area.
+            We pull real compliance data from the EPA&apos;s enforcement database.
+          </p>
+        </div>
       )}
     </div>
   );

@@ -1,130 +1,144 @@
 /**
- * EPA Envirofacts SDWIS API client.
+ * EPA ECHO SDWA REST API client.
  *
- * Free, no key required.  Base URL: https://data.epa.gov/efservice/
- * Always append /JSON so we get JSON instead of XML.
+ * Uses the ECHO (Enforcement & Compliance History Online) API which has
+ * much richer data than the basic Envirofacts API.
+ *
+ * Base: https://echodata.epa.gov/echo/sdw_rest_services
+ * Docs: https://echo.epa.gov/tools/web-services
+ *
+ * Two-step query: get_systems returns a QueryID, get_qid fetches results.
+ * Free, no API key required.
  */
 
-import type {
-  EpaWaterSystem,
-  EpaViolation,
-  EpaGeographicArea,
-} from "./types";
+const BASE = "https://echodata.epa.gov/echo/sdw_rest_services";
+const FETCH_TIMEOUT_MS = 20_000;
 
-const BASE = "https://data.epa.gov/efservice";
+export interface EchoWaterSystem {
+  PWSName: string;
+  PWSId: string;
+  CitiesServed: string | null;
+  StateCode: string;
+  ZipCodesServed: string | null;
+  CountiesServed: string | null;
+  PWSTypeDesc: string;
+  PrimarySourceDesc: string;
+  PopulationServedCount: string | null;
+  PWSActivityDesc: string;
+  OwnerDesc: string;
+  SeriousViolator: string;
+  HealthFlag: string;
+  QtrsWithVio: string;
+  QtrsWithSNC: string;
+  RulesVio3yr: string;
+  SDWAContaminantsInCurViol: string | null;
+  SDWAContaminantsInViol3yr: string | null;
+  CurrVioFlag: string;
+  PbViol: string | null;
+  CuViol: string | null;
+  LeadAndCopperViol: string | null;
+  DfrUrl: string;
+  ViolationCategories: string | null;
+  SDWA3yrComplQtrsHistory: string;
+  ServiceAreaTypeDesc: string | null;
+}
 
-// Generous timeout — the EPA API can be very slow (2-5s typical, 10s+ edge cases)
-const FETCH_TIMEOUT_MS = 15_000;
-
-async function epaFetch<T>(path: string): Promise<T[]> {
-  const url = `${BASE}${path}/JSON`;
+async function echoFetch(url: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
   try {
     const res = await fetch(url, {
       signal: controller.signal,
       headers: { Accept: "application/json" },
-      next: { revalidate: 86400 }, // 24h cache at fetch level
     });
-
-    if (!res.ok) {
-      throw new Error(`EPA API error: ${res.status} ${res.statusText}`);
-    }
-
-    const text = await res.text();
-    if (!text || text.trim() === "" || text.trim() === "[]") {
-      return [];
-    }
-
-    try {
-      const data = JSON.parse(text);
-      return Array.isArray(data) ? data : [];
-    } catch {
-      // EPA sometimes returns XML or HTML error pages even with /JSON suffix
-      return [];
-    }
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new Error("EPA API request timed out. Please try again.");
-    }
-    throw error;
+    return res;
   } finally {
     clearTimeout(timer);
   }
 }
 
 /**
- * Find water systems by state code (e.g. "NY", "CA").
- * Returns up to `limit` active community water systems.
+ * Search water systems by state + county, state alone, or ZIP-adjacent city.
  */
-export async function fetchWaterSystemsByState(
-  stateCode: string,
-  limit = 20,
-): Promise<EpaWaterSystem[]> {
-  const upper = stateCode.toUpperCase().slice(0, 2);
-  return epaFetch<EpaWaterSystem>(
-    `/WATER_SYSTEM/STATE_CODE/${upper}/PWS_ACTIVITY_CODE/A/PWS_TYPE_CODE/CWS/rows/0:${limit - 1}`,
-  );
-}
+export async function searchWaterSystems(params: {
+  state?: string;
+  county?: string;
+  city?: string;
+  zip?: string;
+  limit?: number;
+}): Promise<EchoWaterSystem[]> {
+  const { state, county, city, zip, limit = 20 } = params;
 
-/**
- * Look up PWSIDs serving a given ZIP code via GEOGRAPHIC_AREA,
- * then fetch the corresponding water systems.
- */
-export async function fetchWaterSystemsByZip(
-  zip: string,
-  limit = 20,
-): Promise<EpaWaterSystem[]> {
-  const cleanZip = zip.replace(/\D/g, "").slice(0, 5);
+  const queryParams = new URLSearchParams({
+    output: "JSON",
+    responseset: String(limit),
+  });
 
-  // Step 1 — Find PWSIDs associated with this ZIP
-  const geoRows = await epaFetch<EpaGeographicArea>(
-    `/GEOGRAPHIC_AREA/ZIP_CODE/${cleanZip}/rows/0:${limit - 1}`,
-  );
+  if (zip) {
+    // ZIP search: look up by state + city derived from ZIP, or by county
+    // ECHO doesn't support direct ZIP search well, so we search by state
+    // and let the user browse. We'll add the ZIP to help narrow results.
+    if (state) {
+      queryParams.set("p_st", state.toUpperCase());
+    }
+    if (county) {
+      queryParams.set("p_co", county.toUpperCase());
+    }
+    if (city) {
+      queryParams.set("p_ct", city.toUpperCase());
+    }
+  } else if (state) {
+    queryParams.set("p_st", state.toUpperCase());
+    if (county) queryParams.set("p_co", county.toUpperCase());
+    if (city) queryParams.set("p_ct", city.toUpperCase());
+  }
 
-  if (geoRows.length === 0) {
+  // Only active community water systems
+  queryParams.set("p_pws_activity_status", "A");
+  queryParams.set("p_pws_type", "CWS");
+
+  // Step 1: Submit search → get QueryID
+  const searchUrl = `${BASE}.get_systems?${queryParams.toString()}`;
+  const searchRes = await echoFetch(searchUrl);
+  const searchData = await searchRes.json();
+
+  const queryId = searchData?.Results?.QueryID;
+  const totalRows = parseInt(searchData?.Results?.QueryRows ?? "0", 10);
+
+  if (!queryId || totalRows === 0) {
     return [];
   }
 
-  // Step 2 — Fetch water system details for each PWSID
-  const uniquePwsids = [...new Set(geoRows.map((g) => g.PWSID))].slice(0, limit);
-  const systems = await Promise.allSettled(
-    uniquePwsids.map((pwsid) =>
-      epaFetch<EpaWaterSystem>(`/WATER_SYSTEM/PWSID/${pwsid}/rows/0:0`),
-    ),
-  );
+  // Step 2: Fetch actual results using QueryID
+  const resultUrl = `${BASE}.get_qid?output=JSON&qid=${queryId}&responseset=${limit}`;
+  const resultRes = await echoFetch(resultUrl);
+  const resultData = await resultRes.json();
 
-  return systems
-    .filter(
-      (r): r is PromiseFulfilledResult<EpaWaterSystem[]> =>
-        r.status === "fulfilled",
-    )
-    .flatMap((r) => r.value)
-    .filter((s) => s.PWSID); // drop any empties
+  const systems: EchoWaterSystem[] = resultData?.Results?.WaterSystems ?? [];
+  return systems;
 }
 
 /**
- * Fetch a single water system by PWSID.
+ * Get detailed info for a specific water system by PWSID.
  */
-export async function fetchWaterSystem(
-  pwsid: string,
-): Promise<EpaWaterSystem | null> {
-  const rows = await epaFetch<EpaWaterSystem>(
-    `/WATER_SYSTEM/PWSID/${pwsid}/rows/0:0`,
-  );
-  return rows[0] ?? null;
-}
+export async function getWaterSystemDetail(pwsid: string): Promise<EchoWaterSystem | null> {
+  const queryParams = new URLSearchParams({
+    output: "JSON",
+    p_pwsid: pwsid,
+    responseset: "1",
+  });
 
-/**
- * Fetch violations for a water system.
- * Returns up to `limit` rows (default 100).
- */
-export async function fetchViolations(
-  pwsid: string,
-  limit = 100,
-): Promise<EpaViolation[]> {
-  return epaFetch<EpaViolation>(
-    `/VIOLATION/PWSID/${pwsid}/rows/0:${limit - 1}`,
-  );
+  const searchUrl = `${BASE}.get_systems?${queryParams.toString()}`;
+  const searchRes = await echoFetch(searchUrl);
+  const searchData = await searchRes.json();
+
+  const queryId = searchData?.Results?.QueryID;
+  if (!queryId) return null;
+
+  const resultUrl = `${BASE}.get_qid?output=JSON&qid=${queryId}&responseset=1`;
+  const resultRes = await echoFetch(resultUrl);
+  const resultData = await resultRes.json();
+
+  const systems: EchoWaterSystem[] = resultData?.Results?.WaterSystems ?? [];
+  return systems[0] ?? null;
 }
