@@ -6,19 +6,19 @@ import Link from "next/link";
 import type { Mineral } from "@/lib/types";
 import type { Metadata } from "next";
 
-/** One-glance effect line per mineral (max ~10 words) */
-const MINERAL_TAGLINES: Record<string, string> = {
-  calcium: "Builds bones, supports muscles",
-  magnesium: "Better sleep, more energy, fewer cramps",
-  sodium: "Balances fluids, helps nerve signals",
-  potassium: "Regulates heartbeat, reduces blood pressure",
-  bicarbonate: "Neutralizes acid, aids digestion",
-  sulfate: "Supports detox, aids digestion",
-  chloride: "Maintains fluid balance and pH",
-  silica: "Strengthens hair, skin, nails, and bones",
-  fluoride: "Protects tooth enamel from decay",
-  tds: "Total dissolved solids — overall mineral richness",
-  ph: "Measures acidity or alkalinity of water",
+/** One-glance effect line per mineral with emoji */
+const MINERAL_DATA: Record<string, { emoji: string; tagline: string }> = {
+  calcium: { emoji: "🦴", tagline: "Builds bones, supports muscles" },
+  magnesium: { emoji: "😴", tagline: "Better sleep, more energy, fewer cramps" },
+  sodium: { emoji: "❤️‍🩹", tagline: "Balances fluids, helps nerve signals" },
+  potassium: { emoji: "💪", tagline: "Regulates heartbeat, prevents cramps" },
+  bicarbonate: { emoji: "🏃‍♂️", tagline: "Neutralizes acid, speeds recovery" },
+  sulfate: { emoji: "🧹", tagline: "Supports detox, aids digestion" },
+  chloride: { emoji: "💧", tagline: "Maintains fluid balance and pH" },
+  silica: { emoji: "✨", tagline: "Strengthens hair, skin, and nails" },
+  fluoride: { emoji: "🦷", tagline: "Protects tooth enamel from decay" },
+  tds: { emoji: "📊", tagline: "Total dissolved solids — mineral richness" },
+  ph: { emoji: "⚖️", tagline: "Measures acidity or alkalinity" },
 };
 
 export const metadata: Metadata = {
@@ -51,18 +51,15 @@ export default async function MineralsPage() {
           {allMinerals.map((mineral) => (
             <Link key={mineral.slug} href={`/minerals/${mineral.slug}`}>
               <div className="glass-card p-6 group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full">
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="w-12 h-12 rounded-full bg-ocean-surface/20 flex items-center justify-center text-sm font-bold text-ocean-surface">
-                    {mineral.symbol}
-                  </span>
-                  <div>
-                    <h3 className="text-lg font-bold group-hover:text-ocean-surface transition-colors">
-                      {mineral.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {MINERAL_TAGLINES[mineral.slug] ?? mineral.benefits[0]}
-                    </p>
-                  </div>
+                <span className="text-3xl mb-3 block">{MINERAL_DATA[mineral.slug]?.emoji ?? "💎"}</span>
+                <div className="mb-3">
+                  <h3 className="text-lg font-bold group-hover:text-ocean-surface transition-colors">
+                    {mineral.name}
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">{mineral.symbol}</span>
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {MINERAL_DATA[mineral.slug]?.tagline ?? mineral.benefits[0]}
+                  </p>
                 </div>
 
                 <div className="flex justify-between items-center pt-3 border-t border-border/50">
@@ -123,8 +120,9 @@ export default async function MineralsPage() {
                     <td className="py-3 px-4">
                       <Link
                         href={`/minerals/${mineral.slug}`}
-                        className="font-medium hover:text-ocean-surface transition-colors"
+                        className="font-medium hover:text-ocean-surface transition-colors inline-flex items-center gap-2"
                       >
+                        <span>{MINERAL_DATA[mineral.slug]?.emoji ?? "💎"}</span>
                         {mineral.name}
                       </Link>
                     </td>
