@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { TapWaterPageClient } from "./tap-water-page-client";
+import { TapWaterTabs } from "./tap-water-tabs";
 
 export const metadata: Metadata = {
-  title: "NYC Tap Water Lookup — MineralWater",
+  title: "Tap Water Quality Lookup — MineralWater",
   description:
-    "Search NYC tap water samples by ZIP code or location and review nearby water quality summaries.",
+    "Search EPA drinking water data nationwide by ZIP code or state. Check violations, contaminants, and water system details. Plus NYC lead testing data.",
 };
 
 export default function TapWaterPage() {
-  return <TapWaterPageClient />;
+  return <TapWaterTabs />;
 }

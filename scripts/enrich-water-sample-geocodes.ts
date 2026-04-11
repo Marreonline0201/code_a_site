@@ -512,13 +512,13 @@ async function main() {
           }`,
         );
       } else {
-        outputMap.set(key, { key, latitude: result.latitude, longitude: result.longitude });
+        outputMap.set(key, { key, latitude: result.latitude!, longitude: result.longitude! });
         missMap.delete(key);
         added += 1;
         console.log(
-          `[water:geocode] Added (${added}): ${location} -> (${result.latitude.toFixed(
+          `[water:geocode] Added (${added}): ${location} -> (${result.latitude!.toFixed(
             5,
-          )}, ${result.longitude.toFixed(5)}) via "${result.queryUsed}"`,
+          )}, ${result.longitude!.toFixed(5)}) via "${result.queryUsed}"`,
         );
       }
     } catch (error) {
