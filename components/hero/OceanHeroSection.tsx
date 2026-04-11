@@ -46,6 +46,8 @@ export function OceanHeroSection() {
   const currentFrameRef = useRef(0);
   const rafRef = useRef<number>(0);
   const [progress, setProgress] = useState(0); // 0 to 1 normalized scroll
+  const waterTextRef = useRef<HTMLSpanElement>(null);
+  const waterMaskRef = useRef<HTMLDivElement>(null);
 
   // ── Extract video frames ──
   useEffect(() => {
@@ -115,6 +117,43 @@ export function OceanHeroSection() {
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  // ── Generate pixel-perfect text mask for glass effect ──
+  useEffect(() => {
+    const generateMask = () => {
+      const textEl = waterTextRef.current;
+      const maskEl = waterMaskRef.current;
+      if (!textEl || !maskEl) return;
+
+      const { width, height } = textEl.getBoundingClientRect();
+      if (width === 0 || height === 0) return;
+
+      const dpr = window.devicePixelRatio || 1;
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil(width * dpr);
+      canvas.height = Math.ceil(height * dpr);
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+
+      ctx.scale(dpr, dpr);
+      const cs = getComputedStyle(textEl);
+      ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "alphabetic";
+      ctx.fillStyle = "#fff";
+      // Position at center-x, baseline ~82% down (matches Impact cap-height)
+      ctx.fillText("Water", width / 2, height * 0.82);
+
+      const url = canvas.toDataURL();
+      maskEl.style.maskImage = `url(${url})`;
+      maskEl.style.setProperty("-webkit-mask-image", `url(${url})`);
+    };
+
+    document.fonts.ready.then(generateMask);
+    const ro = new ResizeObserver(generateMask);
+    if (waterTextRef.current) ro.observe(waterTextRef.current);
+    return () => ro.disconnect();
   }, []);
 
   // ── Computed scroll-driven values ──
@@ -212,16 +251,112 @@ export function OceanHeroSection() {
             Find Your Perfect
           </h1>
 
-          {/* Title line 2 — "Water" */}
-          <span
-            className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] font-black tracking-tight text-center block text-white/40"
-            style={{
-              fontFamily: "var(--font-nunito), Nunito, system-ui, sans-serif",
-              transform: `scale(${waterScale})`,
-            }}
+          {/* Title line 2 — "Water" (liquid glass with SVG specular lighting) */}
+          <div
+            className="relative flex justify-center"
+            style={{ transform: `scale(${waterScale})` }}
           >
-            Water
-          </span>
+            {/* SVG filter definitions for chrome/glass specular effect */}
+            <svg width="0" height="0" className="absolute">
+              <defs>
+                <filter id="glass-specular" x="-10%" y="-10%" width="120%" height="120%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
+                  <feSpecularLighting
+                    in="blur"
+                    surfaceScale="8"
+                    specularConstant="2.5"
+                    specularExponent="35"
+                    lightingColor="white"
+                    result="specular"
+                  >
+                    <feDistantLight azimuth="225" elevation="35" />
+                  </feSpecularLighting>
+                  <feComposite in="specular" in2="SourceAlpha" operator="in" result="specClipped" />
+                </filter>
+                <filter id="glass-shadow" x="-10%" y="-10%" width="120%" height="120%">
+                  <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur" />
+                  <feDiffuseLighting
+                    in="blur"
+                    surfaceScale="6"
+                    diffuseConstant="1.2"
+                    result="diffuse"
+                  >
+                    <feDistantLight azimuth="225" elevation="35" />
+                  </feDiffuseLighting>
+                  <feComposite in="diffuse" in2="SourceAlpha" operator="in" result="diffClipped" />
+                </filter>
+              </defs>
+            </svg>
+
+            {/* Layer 1: Clear glass refraction — background visible through text */}
+            <div
+              ref={waterMaskRef}
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backdropFilter: "brightness(1.08) contrast(1.05) saturate(1.1)",
+                WebkitBackdropFilter: "brightness(1.08) contrast(1.05) saturate(1.1)",
+                maskSize: "100% 100%",
+                WebkitMaskSize: "100% 100%",
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+                zIndex: 1,
+              }}
+            />
+
+            {/* Layer 2: Sizing text — transparent, thin dark edge */}
+            <span
+              ref={waterTextRef}
+              className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tight text-center block relative"
+              style={{
+                fontFamily: "Impact, 'Arial Narrow', sans-serif",
+                fontWeight: 400,
+                lineHeight: 1,
+                color: "transparent",
+                WebkitTextStroke: "0.5px rgba(100,100,100,0.35)",
+                zIndex: 2,
+              }}
+              aria-label="Water"
+            >
+              Water
+            </span>
+
+            {/* Layer 3: Diffuse lighting — dark glass edges/shadows */}
+            <span
+              className="absolute inset-0 text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tight text-center block pointer-events-none select-none"
+              style={{
+                fontFamily: "Impact, 'Arial Narrow', sans-serif",
+                fontWeight: 400,
+                lineHeight: 1,
+                color: "black",
+                filter: "url(#glass-shadow)",
+                mixBlendMode: "multiply",
+                opacity: 0.5,
+                zIndex: 3,
+              }}
+              aria-hidden="true"
+            >
+              Water
+            </span>
+
+            {/* Layer 4: Specular highlights — chrome edge reflections */}
+            <span
+              className="absolute inset-0 text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tight text-center block pointer-events-none select-none"
+              style={{
+                fontFamily: "Impact, 'Arial Narrow', sans-serif",
+                fontWeight: 400,
+                lineHeight: 1,
+                color: "black",
+                filter: "url(#glass-specular)",
+                mixBlendMode: "screen",
+                zIndex: 4,
+              }}
+              aria-hidden="true"
+            >
+              Water
+            </span>
+          </div>
 
           {/* Subtitle */}
           <p
@@ -292,7 +427,7 @@ export function OceanHeroSection() {
                   alt={bottle.name}
                   width={180}
                   height={400}
-                  className="object-contain max-h-[260px] sm:max-h-[340px] md:max-h-[420px]"
+                  className="object-contain w-auto max-h-[260px] sm:max-h-[340px] md:max-h-[420px]"
                   unoptimized
                   priority={i === 0}
                 />
