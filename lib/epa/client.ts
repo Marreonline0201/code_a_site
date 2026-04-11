@@ -214,15 +214,49 @@ export async function searchWaterSystems(params: {
       const results = await Promise.all(fetches);
       systems.push(...(results.filter(Boolean) as EnviroSystem[]));
     }
-  } else {
-    // Fetch by state directly — get a larger batch to sort by population
-    let url = `${ENVIRO_BASE}/WATER_SYSTEM/STATE_CODE/${st}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A`;
-    if (city) url += `/CITY_NAME/${encodeURIComponent(city.toUpperCase())}`;
-    url += `/rows/0:${fetchLimit - 1}/json`;
+  } else if (city) {
+    // City search — single targeted query
+    const url = `${ENVIRO_BASE}/WATER_SYSTEM/STATE_CODE/${st}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A/CITY_NAME/${encodeURIComponent(city.toUpperCase())}/rows/0:99/json`;
     const res = await enviroFetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (Array.isArray(data)) systems = data;
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) systems = data;
+    }
+  } else {
+    // State search — sample from multiple offsets to cover all geographic areas.
+    // PWSIDs are ordered by county code, so different offsets reach different counties.
+    // Fetch pages in parallel from spread-out positions in the dataset.
+    const countUrl = `${ENVIRO_BASE}/WATER_SYSTEM/STATE_CODE/${st}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A/count/json`;
+    let totalCount = 1000;
+    try {
+      const countRes = await enviroFetch(countUrl);
+      if (countRes.ok) {
+        const countData = await countRes.json();
+        totalCount = countData?.TOTALQUERYRESULTS ?? 1000;
+      }
+    } catch { /* use default */ }
+
+    // Sample systems from evenly spaced positions across the full dataset
+    // to cover all geographic areas (PWSIDs are ordered by county code)
+    const pageSize = 50;
+    const numPages = Math.min(10, Math.ceil(totalCount / pageSize));
+    const stride = Math.max(pageSize, Math.floor(totalCount / numPages));
+    const offsets = Array.from({ length: numPages }, (_, i) =>
+      Math.min(i * stride, Math.max(0, totalCount - pageSize))
+    );
+
+    const pageFetches = offsets.map(async (offset) => {
+      const end = Math.min(offset + pageSize - 1, totalCount - 1);
+      const url = `${ENVIRO_BASE}/WATER_SYSTEM/STATE_CODE/${st}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A/rows/${offset}:${end}/json`;
+      try {
+        const res = await enviroFetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch { return []; }
+    });
+    const pages = await Promise.all(pageFetches);
+    systems = pages.flat();
   }
 
   // Sort by population (largest first) and take top results
