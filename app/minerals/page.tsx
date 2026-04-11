@@ -6,6 +6,21 @@ import Link from "next/link";
 import type { Mineral } from "@/lib/types";
 import type { Metadata } from "next";
 
+/** One-glance effect line per mineral (max ~10 words) */
+const MINERAL_TAGLINES: Record<string, string> = {
+  calcium: "Builds bones, supports muscles",
+  magnesium: "Better sleep, more energy, fewer cramps",
+  sodium: "Balances fluids, helps nerve signals",
+  potassium: "Regulates heartbeat, reduces blood pressure",
+  bicarbonate: "Neutralizes acid, aids digestion",
+  sulfate: "Supports detox, aids digestion",
+  chloride: "Maintains fluid balance and pH",
+  silica: "Strengthens hair, skin, nails, and bones",
+  fluoride: "Protects tooth enamel from decay",
+  tds: "Total dissolved solids — overall mineral richness",
+  ph: "Measures acidity or alkalinity of water",
+};
+
 export const metadata: Metadata = {
   title: "Minerals in Water — MineralWater",
   description:
@@ -36,7 +51,7 @@ export default async function MineralsPage() {
           {allMinerals.map((mineral) => (
             <Link key={mineral.slug} href={`/minerals/${mineral.slug}`}>
               <div className="glass-card p-6 group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-full">
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center gap-3 mb-3">
                   <span className="w-12 h-12 rounded-full bg-ocean-surface/20 flex items-center justify-center text-sm font-bold text-ocean-surface">
                     {mineral.symbol}
                   </span>
@@ -44,23 +59,11 @@ export default async function MineralsPage() {
                     <h3 className="text-lg font-bold group-hover:text-ocean-surface transition-colors">
                       {mineral.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {mineral.unit}
+                    <p className="text-sm text-muted-foreground">
+                      {MINERAL_TAGLINES[mineral.slug] ?? mineral.benefits[0]}
                     </p>
                   </div>
                 </div>
-
-                <ul className="space-y-1.5 mb-4">
-                  {mineral.benefits.slice(0, 3).map((benefit) => (
-                    <li
-                      key={benefit}
-                      className="text-sm text-muted-foreground flex items-start gap-2"
-                    >
-                      <span className="text-ocean-surface mt-0.5">+</span>
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
 
                 <div className="flex justify-between items-center pt-3 border-t border-border/50">
                   {mineral.daily_value > 0 ? (

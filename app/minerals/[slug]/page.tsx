@@ -7,7 +7,9 @@ import { WaveDivider } from "@/components/animation/WaveDivider";
 import { ParallaxLayer } from "@/components/animation/ParallaxLayer";
 import { FloatingBubbles } from "@/components/animation/FloatingBubbles";
 import { ProductCard } from "@/components/ProductCard";
+import { getBrandImage } from "@/lib/brand-images";
 import Link from "next/link";
+import Image from "next/image";
 import type { Mineral, Brand } from "@/lib/types";
 import type { Metadata } from "next";
 
@@ -240,6 +242,7 @@ export default async function MineralDetailPage({
               <tbody>
                 {brands.map((brand, index) => {
                   const value = (brand[mineralColumn as keyof Brand] as number) ?? 0;
+                  const bottleImg = getBrandImage(brand.slug);
                   return (
                     <tr
                       key={brand.slug}
@@ -251,8 +254,18 @@ export default async function MineralDetailPage({
                       <td className="py-3 px-4">
                         <Link
                           href={`/brands/${brand.slug}`}
-                          className="font-medium hover:text-ocean-surface transition-colors"
+                          className="inline-flex items-center gap-2 font-medium hover:text-ocean-surface transition-colors"
                         >
+                          {bottleImg && (
+                            <Image
+                              src={bottleImg}
+                              alt={`${brand.name} bottle`}
+                              width={20}
+                              height={50}
+                              className="object-contain h-[40px] w-auto shrink-0"
+                              unoptimized
+                            />
+                          )}
                           {brand.name}
                         </Link>
                       </td>
