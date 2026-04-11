@@ -6,8 +6,10 @@ import { CountUp } from "@/components/animation/CountUp";
 import { WaveDivider } from "@/components/animation/WaveDivider";
 import { FloatingBubbles } from "@/components/animation/FloatingBubbles";
 import Link from "next/link";
+import Image from "next/image";
 import { AffiliateButton } from "@/components/AffiliateButton";
 import { JsonLd } from "@/components/JsonLd";
+import { getBrandImage } from "@/lib/brand-images";
 import type { Brand } from "@/lib/types";
 import type { Metadata } from "next";
 
@@ -162,6 +164,19 @@ export default async function BrandDetailPage({
         <FloatingBubbles count={12} />
         <div className="relative z-10 text-center px-4 pt-16">
           <ScrollReveal>
+            {getBrandImage(b.slug) && (
+              <div className="flex justify-center mb-6">
+                <Image
+                  src={getBrandImage(b.slug)!}
+                  alt={`${b.name} bottle`}
+                  width={100}
+                  height={250}
+                  className="object-contain h-[180px] md:h-[220px] drop-shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
+                  unoptimized
+                  priority
+                />
+              </div>
+            )}
             <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-sm text-white mb-4">
               {b.type} &middot; {b.origin}
             </span>

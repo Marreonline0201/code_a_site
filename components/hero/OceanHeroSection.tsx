@@ -4,14 +4,23 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-/* ── Bottle data ── */
+/* ── Bottle data — all 15 brands ── */
 const bottles = [
   { name: "Evian", origin: "France · Still", image: "/images/evian.png" },
   { name: "Fiji", origin: "Fiji · Still", image: "/images/fiji.png" },
   { name: "Gerolsteiner", origin: "Germany · Sparkling", image: "/images/gerolsteiner.png" },
+  { name: "San Pellegrino", origin: "Italy · Sparkling", image: "/images/san-pellegrino.png" },
+  { name: "Perrier", origin: "France · Sparkling", image: "/images/perrier.png" },
+  { name: "Voss", origin: "Norway · Still & Sparkling", image: "/images/voss.png" },
+  { name: "Essentia", origin: "USA · Still", image: "/images/essentia.png" },
+  { name: "Smartwater", origin: "USA · Still", image: "/images/smartwater.png" },
   { name: "Topo Chico", origin: "Mexico · Sparkling", image: "/images/topo-chico.png" },
-  { name: "Liquid Death", origin: "USA · Still & Sparkling", image: "/images/liquid-death.png" },
   { name: "Mountain Valley", origin: "USA · Still & Sparkling", image: "/images/mountain-valley.png" },
+  { name: "Acqua Panna", origin: "Italy · Still", image: "/images/acqua-panna.png" },
+  { name: "Waiakea", origin: "Hawaii · Still", image: "/images/waiakea.png" },
+  { name: "Icelandic Glacial", origin: "Iceland · Still", image: "/images/icelandic.png" },
+  { name: "Liquid Death", origin: "USA · Still & Sparkling", image: "/images/liquid-death.png" },
+  { name: "Flow", origin: "Canada · Still", image: "/images/flow.png" },
 ];
 
 const TOTAL_FRAMES = 30;
@@ -152,7 +161,7 @@ export function OceanHeroSection() {
   const scrollHintOpacity = 1 - rangeProgress(progress, 0, 0.05);
 
   return (
-    <section ref={sectionRef} className="relative w-full h-[500svh]">
+    <section ref={sectionRef} className="relative w-full h-[800svh]">
       <div className="sticky top-0 h-[100svh] min-h-[600px] max-h-[1100px] overflow-hidden">
 
         {/* ── Canvas (video) ── */}

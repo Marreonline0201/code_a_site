@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { CountUp } from "@/components/animation/CountUp";
 import { WaveDivider } from "@/components/animation/WaveDivider";
+import { getBrandImage } from "@/lib/brand-images";
 import { ParallaxLayer } from "@/components/animation/ParallaxLayer";
 import { FloatingBubbles } from "@/components/animation/FloatingBubbles";
 import Link from "next/link";
@@ -109,6 +111,12 @@ export default async function CompareDetailPage({
                     {brand.rating.toFixed(1)} ★
                   </span>
                 </div>
+                {getBrandImage(brand.slug) && (
+                  <div className="flex justify-center my-3">
+                    <Image src={getBrandImage(brand.slug)!} alt={`${brand.name} bottle`}
+                      width={60} height={150} className="object-contain h-[100px] drop-shadow-md" unoptimized />
+                  </div>
+                )}
                 <h2 className="text-2xl font-bold mb-1">{brand.name}</h2>
                 <p className="text-sm text-muted-foreground mb-3">
                   {brand.origin} &middot; {brand.price_range}

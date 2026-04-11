@@ -1,6 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart } from "lucide-react";
+import { getBrandImage } from "@/lib/brand-images";
 import type { Brand } from "@/lib/types";
 
 interface ProductCardProps {
@@ -14,6 +16,7 @@ export function ProductCard({ brand, showAffiliate = false }: ProductCardProps) 
     { label: "Mg", value: brand.magnesium },
     { label: "Na", value: brand.sodium },
   ];
+  const brandImage = getBrandImage(brand.slug);
 
   return (
     <div className="glass-card p-5 group hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -26,6 +29,20 @@ export function ProductCard({ brand, showAffiliate = false }: ProductCardProps) 
             {brand.rating.toFixed(1)} ★
           </span>
         </div>
+
+        {/* Bottle image */}
+        {brandImage && (
+          <div className="flex justify-center my-4">
+            <Image
+              src={brandImage}
+              alt={`${brand.name} bottle`}
+              width={60}
+              height={150}
+              className="object-contain h-[120px] drop-shadow-[0_4px_12px_rgba(0,0,0,0.15)] group-hover:scale-105 transition-transform duration-300"
+              unoptimized
+            />
+          </div>
+        )}
 
         <h3 className="text-lg font-bold mb-1 group-hover:text-ocean-surface transition-colors">
           {brand.name}
