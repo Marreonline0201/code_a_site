@@ -237,13 +237,17 @@ export async function searchWaterSystems(params: {
     } catch { /* use default */ }
 
     // Sample systems from evenly spaced positions across the full dataset
-    // to cover all geographic areas (PWSIDs are ordered by county code)
-    const pageSize = 50;
-    const numPages = Math.min(10, Math.ceil(totalCount / pageSize));
-    const stride = Math.max(pageSize, Math.floor(totalCount / numPages));
-    const offsets = Array.from({ length: numPages }, (_, i) =>
-      Math.min(i * stride, Math.max(0, totalCount - pageSize))
-    );
+    // to cover all geographic areas (PWSIDs are ordered by county code).
+    // Use many small pages to avoid gaps — e.g. NY has 2202 systems,
+    // 20 pages × 25 rows = 500 systems covering every ~110 rows.
+    const pageSize = 25;
+    const numPages = Math.min(20, Math.ceil(totalCount / pageSize));
+    const stride = Math.max(1, Math.floor(totalCount / numPages));
+    const offsets = [...new Set(
+      Array.from({ length: numPages }, (_, i) =>
+        Math.min(i * stride, Math.max(0, totalCount - pageSize))
+      )
+    )];
 
     const pageFetches = offsets.map(async (offset) => {
       const end = Math.min(offset + pageSize - 1, totalCount - 1);
