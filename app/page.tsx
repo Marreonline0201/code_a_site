@@ -36,120 +36,201 @@ export default async function HomePage() {
 
       <WaveDivider variant="gentle" />
 
-      {/* ── Section 1: Why Minerals Matter ── */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
+      {/* ── Section 1: The problem you didn't know you had ── */}
+      <section className="max-w-5xl mx-auto px-4 py-20">
         <ScrollReveal>
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Why Minerals Matter
+          <p className="text-sm font-medium text-ocean-surface text-center uppercase tracking-widest mb-4">
+            What you don&apos;t see
+          </p>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-5 leading-tight">
+            You drink 2 liters a day.
+            <br />
+            <span className="text-muted-foreground">Do you know what&apos;s in it?</span>
           </h2>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-14">
-            The water you drink is more than just H₂O. Mineral content varies
-            dramatically between brands — and those minerals directly impact your health.
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-16 text-base leading-relaxed">
+            Two bottles of water can look identical on the shelf — but one might have
+            82x more magnesium than the other. That invisible difference affects your sleep,
+            your bones, your energy, and your heart. Every single day.
           </p>
         </ScrollReveal>
 
-        <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="glass-card p-6">
-            <div className="w-12 h-12 rounded-xl bg-ocean-surface/10 flex items-center justify-center mb-4">
-              <Bone className="size-6 text-ocean-surface" />
+        {/* Shocking comparison */}
+        <ScrollReveal delay={0.1}>
+          <div className="glass-card p-8 mb-8">
+            <div className="grid grid-cols-3 items-center gap-4">
+              <div className="text-center">
+                <p className="text-3xl md:text-4xl font-bold text-ocean-surface">0</p>
+                <p className="text-xs text-muted-foreground mt-1">mg/L magnesium</p>
+                <p className="text-sm font-medium mt-2">Smartwater</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground">vs</p>
+                <div className="w-full h-px bg-border my-2" />
+                <p className="text-xs text-muted-foreground">same price range</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl md:text-4xl font-bold text-ocean-surface">108</p>
+                <p className="text-xs text-muted-foreground mt-1">mg/L magnesium</p>
+                <p className="text-sm font-medium mt-2">Gerolsteiner</p>
+              </div>
             </div>
-            <h3 className="text-lg font-bold mb-2">Bone & Joint Health</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Calcium and magnesium in mineral water contribute to bone density. Some brands provide up to 15% of your daily calcium per liter.
+            <p className="text-center text-xs text-muted-foreground mt-6">
+              That&apos;s 26% of your daily magnesium — from something you&apos;re already drinking.
             </p>
           </div>
-          <div className="glass-card p-6">
-            <div className="w-12 h-12 rounded-xl bg-ocean-surface/10 flex items-center justify-center mb-4">
-              <Heart className="size-6 text-ocean-surface" />
-            </div>
-            <h3 className="text-lg font-bold mb-2">Heart & Blood Pressure</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Magnesium helps regulate blood pressure and heart rhythm. Low-sodium mineral waters are ideal for those watching salt intake.
-            </p>
-          </div>
-          <div className="glass-card p-6">
-            <div className="w-12 h-12 rounded-xl bg-ocean-surface/10 flex items-center justify-center mb-4">
-              <Brain className="size-6 text-ocean-surface" />
-            </div>
-            <h3 className="text-lg font-bold mb-2">Energy & Recovery</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Bicarbonate-rich waters help neutralize lactic acid after exercise. Electrolyte balance speeds up muscle recovery and reduces fatigue.
-            </p>
-          </div>
-        </StaggerGrid>
+        </ScrollReveal>
+
+        <div className="text-center">
+          <Link href="/compare" className="text-sm text-primary font-medium hover:underline">
+            Compare any two brands →
+          </Link>
+        </div>
       </section>
 
       <WaveDivider variant="choppy" />
 
-      {/* ── Section 2: Why It's Important ── */}
-      <section className="max-w-5xl mx-auto px-4 py-20">
+      {/* ── Section 2: What each mineral does — at a glance ── */}
+      <section className="max-w-7xl mx-auto px-4 py-20">
         <ScrollReveal>
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Not All Water Is Equal
+          <p className="text-sm font-medium text-ocean-surface text-center uppercase tracking-widest mb-4">
+            Your water, working for you
+          </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-5">
+            Every Sip Can Do More
           </h2>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-14">
-            Most people never check what&apos;s in their water. The difference between brands can be dramatic.
+          <p className="text-center text-muted-foreground max-w-xl mx-auto mb-14">
+            The right minerals in your water quietly support your body all day long —
+            if you know which ones to look for.
           </p>
         </ScrollReveal>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <ScrollReveal delay={0.1}>
-            <div className="glass-card p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Shield className="size-6 text-ocean-surface" />
-                <h3 className="text-lg font-bold">Know Your Source</h3>
-              </div>
+        <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Each card: problem → mineral → benefit → brand range */}
+          <Link href="/minerals/calcium" className="group">
+            <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Bone className="size-7 text-ocean-surface mb-4" />
+              <p className="text-sm text-muted-foreground mb-1">Weak bones? Stiff joints?</p>
+              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Calcium</h3>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Tap water quality varies wildly by city. Some municipal systems have had lead or contaminant violations. Mineral water from natural springs bypasses many of these concerns.
+                Strengthens bones and teeth, supports nerve signaling and muscle contraction.
               </p>
-              <Link href="/tap-water" className="text-sm text-primary font-medium hover:underline">
-                Check your tap water quality →
-              </Link>
-            </div>
-          </ScrollReveal>
-          <ScrollReveal delay={0.2}>
-            <div className="glass-card p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Zap className="size-6 text-ocean-surface" />
-                <h3 className="text-lg font-bold">TDS Tells a Story</h3>
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-sm font-bold text-ocean-surface">0 – 348 mg/L</span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Total Dissolved Solids (TDS) ranges from 30 mg/L (Smartwater) to 2,479 mg/L (Gerolsteiner). Higher TDS means more minerals — which affects taste, health benefits, and who the water is best for.
-              </p>
-              <Link href="/compare" className="text-sm text-primary font-medium hover:underline">
-                Compare brands side-by-side →
-              </Link>
             </div>
-          </ScrollReveal>
-          <ScrollReveal delay={0.1}>
-            <div className="glass-card p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Droplets className="size-6 text-ocean-surface" />
-                <h3 className="text-lg font-bold">pH & Alkalinity</h3>
+          </Link>
+
+          <Link href="/minerals/magnesium" className="group">
+            <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Brain className="size-7 text-ocean-surface mb-4" />
+              <p className="text-sm text-muted-foreground mb-1">Poor sleep? Low energy?</p>
+              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Magnesium</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Regulates 300+ enzyme reactions. Improves sleep quality, reduces muscle cramps, boosts energy production.
+              </p>
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-sm font-bold text-ocean-surface">0 – 108 mg/L</span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                pH ranges from 5.5 (Perrier) to 9.5 (Essentia). Alkaline waters may help with acid reflux, while naturally acidic sparkling waters offer a crisp, refreshing taste.
-              </p>
-              <Link href="/best/alkaline" className="text-sm text-primary font-medium hover:underline">
-                Best alkaline waters →
-              </Link>
             </div>
-          </ScrollReveal>
-          <ScrollReveal delay={0.2}>
-            <div className="glass-card p-8">
-              <div className="flex items-center gap-3 mb-4">
-                <Heart className="size-6 text-ocean-surface" />
-                <h3 className="text-lg font-bold">Daily Hydration Goals</h3>
+          </Link>
+
+          <Link href="/minerals/sodium" className="group">
+            <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Heart className="size-7 text-ocean-surface mb-4" />
+              <p className="text-sm text-muted-foreground mb-1">Watching blood pressure?</p>
+              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Sodium</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Essential for fluid balance and nerve function — but too much raises blood pressure. Some waters have 20x more than others.
+              </p>
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-sm font-bold text-ocean-surface">0 – 118 mg/L</span>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                The average adult needs 2-3 liters daily, more with exercise or hot weather. Tracking intake helps you stay consistent and understand your hydration patterns.
-              </p>
-              <Link href="/tracker" className="text-sm text-primary font-medium hover:underline">
-                Start tracking →
-              </Link>
             </div>
-          </ScrollReveal>
-        </div>
+          </Link>
+
+          <Link href="/minerals/bicarbonate" className="group">
+            <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Zap className="size-7 text-ocean-surface mb-4" />
+              <p className="text-sm text-muted-foreground mb-1">Post-workout fatigue?</p>
+              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Bicarbonate</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Neutralizes lactic acid, aids digestion, and buffers your body&apos;s pH. Athletes drink bicarbonate-rich water for faster recovery.
+              </p>
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-sm font-bold text-ocean-surface">0 – 1,816 mg/L</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/minerals/silica" className="group">
+            <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Droplets className="size-7 text-ocean-surface mb-4" />
+              <p className="text-sm text-muted-foreground mb-1">Dull skin? Brittle nails?</p>
+              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Silica</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Promotes skin elasticity, hair thickness, and nail strength. Fiji water is famous for its high silica — 93 mg/L.
+              </p>
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-sm font-bold text-ocean-surface">0 – 93 mg/L</span>
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/minerals/potassium" className="group">
+            <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <Shield className="size-7 text-ocean-surface mb-4" />
+              <p className="text-sm text-muted-foreground mb-1">Muscle cramps? Irregular heartbeat?</p>
+              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Potassium</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Balances sodium, regulates heart rhythm, and prevents muscle cramps. Most people don&apos;t get enough daily potassium.
+              </p>
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-sm font-bold text-ocean-surface">0.3 – 11 mg/L</span>
+              </div>
+            </div>
+          </Link>
+        </StaggerGrid>
+
+        <ScrollReveal delay={0.3}>
+          <div className="text-center mt-12">
+            <Link
+              href="/minerals"
+              className="inline-flex items-center gap-2 text-primary font-medium hover:underline"
+            >
+              See the full mineral guide →
+            </Link>
+          </div>
+        </ScrollReveal>
+      </section>
+
+      <WaveDivider variant="gentle" />
+
+      {/* ── Section 2b: The tap water nudge ── */}
+      <section className="max-w-4xl mx-auto px-4 py-20">
+        <ScrollReveal>
+          <div className="glass-card p-8 md:p-10 text-center">
+            <Shield className="size-10 text-ocean-surface mx-auto mb-4" />
+            <h3 className="text-2xl md:text-3xl font-bold mb-3">
+              Meanwhile, do you trust your tap?
+            </h3>
+            <p className="text-muted-foreground max-w-lg mx-auto mb-6 leading-relaxed">
+              Over 12,000 U.S. water systems have had violations in the last 3 years.
+              Lead, copper, and treatment failures affect millions. Check yours in seconds.
+            </p>
+            <Link
+              href="/tap-water"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-full hover:bg-primary/90 transition-all hover:scale-105"
+            >
+              Look Up Your Water System →
+            </Link>
+          </div>
+        </ScrollReveal>
       </section>
 
       <WaveDivider variant="gentle" />
