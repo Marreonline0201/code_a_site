@@ -310,8 +310,8 @@ export function OceanHeroSection() {
               ref={waterTextRef}
               className="text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tight text-center block relative"
               style={{
-                fontFamily: "Impact, 'Arial Narrow', sans-serif",
-                fontWeight: 400,
+                fontFamily: "var(--font-nunito), Nunito, sans-serif",
+                fontWeight: 900,
                 lineHeight: 1,
                 color: "transparent",
                 WebkitTextStroke: "0.5px rgba(100,100,100,0.35)",
@@ -326,8 +326,8 @@ export function OceanHeroSection() {
             <span
               className="absolute inset-0 text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tight text-center block pointer-events-none select-none"
               style={{
-                fontFamily: "Impact, 'Arial Narrow', sans-serif",
-                fontWeight: 400,
+                fontFamily: "var(--font-nunito), Nunito, sans-serif",
+                fontWeight: 900,
                 lineHeight: 1,
                 color: "black",
                 filter: "url(#glass-shadow)",
@@ -344,8 +344,8 @@ export function OceanHeroSection() {
             <span
               className="absolute inset-0 text-7xl sm:text-8xl md:text-9xl lg:text-[10rem] tracking-tight text-center block pointer-events-none select-none"
               style={{
-                fontFamily: "Impact, 'Arial Narrow', sans-serif",
-                fontWeight: 400,
+                fontFamily: "var(--font-nunito), Nunito, sans-serif",
+                fontWeight: 900,
                 lineHeight: 1,
                 color: "black",
                 filter: "url(#glass-specular)",
