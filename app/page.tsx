@@ -4,6 +4,7 @@ import { ScrollReveal } from "@/components/animation/ScrollReveal";
 import { StaggerGrid } from "@/components/animation/StaggerGrid";
 import { WaveDivider } from "@/components/animation/WaveDivider";
 import { ProductCard } from "@/components/ProductCard";
+import Image from "next/image";
 import Link from "next/link";
 import type { Brand } from "@/lib/types";
 
@@ -36,44 +37,53 @@ export default async function HomePage() {
   return (
     <>
       {/* Ocean Hero — full viewport scroll experience */}
-      <OceanHeroSection />
+      <div className="-mt-16">
+        <OceanHeroSection />
+      </div>
 
       <WaveDivider variant="gentle" />
 
       {/* ── Section 1: The problem you didn't know you had ── */}
       <section className="max-w-5xl mx-auto px-4 py-20">
         <ScrollReveal>
-          <p className="text-sm font-medium text-ocean-surface text-center uppercase tracking-widest mb-4">
-            What you don&apos;t see
-          </p>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-5 leading-tight">
             You drink 2 liters a day.
             <br />
             <span className="text-muted-foreground">Do you know what&apos;s in it?</span>
           </h2>
-          <p className="text-center text-muted-foreground max-w-xl mx-auto mb-16 text-base">
-            Same shelf, same price — but one has 82x more magnesium. That difference hits your sleep, bones, and energy daily.
-          </p>
         </ScrollReveal>
 
         {/* Shocking comparison */}
         <ScrollReveal delay={0.1}>
-          <div className="glass-card p-8 mb-8">
-            <div className="grid grid-cols-3 items-center gap-4">
-              <div className="text-center">
-                <p className="text-3xl md:text-4xl font-bold text-ocean-surface">0</p>
-                <p className="text-xs text-muted-foreground mt-1">mg/L magnesium</p>
-                <p className="text-sm font-medium mt-2">Smartwater</p>
+          <div className="mb-8">
+            <div className="mx-auto flex max-w-2xl items-start justify-around gap-6">
+              <div className="w-40 rounded-2xl border border-border/70 bg-background/60 p-4 text-center">
+                <div className="relative mb-3 h-28 w-full">
+                  <Image
+                    src="/images/smartwater.png"
+                    alt="Smartwater bottle"
+                    fill
+                    className="object-contain"
+                    sizes="160px"
+                  />
+                </div>
+                <p className="text-sm font-medium">Smartwater</p>
+                <p className="mt-2 text-3xl font-bold text-ocean-surface">0</p>
+                <p className="mt-1 text-xs text-muted-foreground">mg/L magnesium</p>
               </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">vs</p>
-                <div className="w-full h-px bg-border my-2" />
-                <p className="text-xs text-muted-foreground">same price range</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl md:text-4xl font-bold text-ocean-surface">108</p>
-                <p className="text-xs text-muted-foreground mt-1">mg/L magnesium</p>
-                <p className="text-sm font-medium mt-2">Gerolsteiner</p>
+              <div className="w-40 rounded-2xl border border-border/70 bg-background/60 p-4 text-center">
+                <div className="relative mb-3 h-28 w-full">
+                  <Image
+                    src="/images/gerolsteiner.png"
+                    alt="Gerolsteiner bottle"
+                    fill
+                    className="object-contain"
+                    sizes="160px"
+                  />
+                </div>
+                <p className="text-sm font-medium">Gerolsteiner</p>
+                <p className="mt-2 text-3xl font-bold text-ocean-surface">108</p>
+                <p className="mt-1 text-xs text-muted-foreground">mg/L magnesium</p>
               </div>
             </div>
             <p className="text-center text-xs text-muted-foreground mt-6">
@@ -356,3 +366,4 @@ export default async function HomePage() {
     </>
   );
 }
+

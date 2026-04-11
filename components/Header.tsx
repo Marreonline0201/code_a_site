@@ -21,16 +21,12 @@ const authLinks = [
 ];
 
 export function Header() {
-  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", onScroll, { passive: true });
-
     // Check auth state
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
 
@@ -40,20 +36,17 @@ export function Header() {
     });
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
       subscription.unsubscribe();
     };
   }, [supabase.auth]);
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled
-          ? "bg-background/80 backdrop-blur-lg border-b border-border shadow-sm"
-          : "bg-transparent"
-      }`}
+      className="pointer-events-none fixed inset-x-0 top-2 z-50 px-3"
     >
-      <nav className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <nav
+        className="pointer-events-auto mx-auto flex h-14 max-w-7xl items-center justify-between rounded-[1.75rem] border border-border/70 bg-background/75 px-4 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-all duration-300 md:px-5"
+      >
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
           <Droplets className="size-6 text-primary" />
@@ -130,8 +123,8 @@ export function Header() {
 
       {/* Mobile dropdown */}
       {user && mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-lg">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3">
+        <div className="pointer-events-auto mx-auto mt-2 max-w-7xl rounded-2xl border border-border bg-background/95 shadow-lg backdrop-blur-xl md:hidden">
+          <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4">
             {navLinks.map((link) => (
               <Link
                 key={link.href}

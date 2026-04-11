@@ -3,6 +3,7 @@ import "server-only";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { DEFAULT_WATER_SAMPLES_CSV_PATH } from "./constants";
+import { loadTextFromSupabaseStorage } from "./storage";
 import type { RawCsvRow } from "./types";
 
 export type LoadedCsvFile = {
@@ -11,6 +12,18 @@ export type LoadedCsvFile = {
   rows: RawCsvRow[];
   headers: string[];
 };
+
+function getSupabaseStorageConfig() {
+  const bucket = process.env.NYC_WATER_STORAGE_BUCKET?.trim();
+  if (!bucket) {
+    return null;
+  }
+
+  const objectPath =
+    process.env.NYC_WATER_SAMPLES_STORAGE_PATH?.trim() ?? "nyc-lead-testing.csv";
+
+  return { bucket, objectPath };
+}
 
 function getCsvPath() {
   const configuredPath =
@@ -105,6 +118,28 @@ function rowsToObjects(rows: string[][]) {
 }
 
 export async function loadCsvFile(): Promise<LoadedCsvFile> {
+  const storageConfig = getSupabaseStorageConfig();
+
+  if (storageConfig) {
+    try {
+      const storageFile = await loadTextFromSupabaseStorage(
+        storageConfig.bucket,
+        storageConfig.objectPath,
+      );
+      const parsedRows = parseCsvText(storageFile.text);
+      const { headers, rows } = rowsToObjects(parsedRows);
+
+      return {
+        absolutePath: storageFile.sourcePath,
+        mtimeMs: storageFile.mtimeMs,
+        headers,
+        rows,
+      };
+    } catch {
+      // Fall back to local file path if storage is unavailable.
+    }
+  }
+
   const absolutePath = getCsvPath();
 
   let fileStat;

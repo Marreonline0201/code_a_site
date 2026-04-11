@@ -3,6 +3,7 @@ import "server-only";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { DEFAULT_WATER_ZIP_TRENDS_CSV_PATH } from "./constants";
+import { loadTextFromSupabaseStorage } from "./storage";
 import type { RawCsvRow, ZipLeadTrendRecord, ZipLeadTrendSummary } from "./types";
 
 export type LoadedZipTrendFile = {
@@ -44,6 +45,18 @@ function getCsvPath() {
   } catch {}
 
   return cwdPath;
+}
+
+function getSupabaseStorageConfig() {
+  const bucket = process.env.NYC_WATER_STORAGE_BUCKET?.trim();
+  if (!bucket) {
+    return null;
+  }
+
+  const objectPath =
+    process.env.NYC_WATER_ZIP_TRENDS_STORAGE_PATH?.trim() ?? "lead-testing2.csv";
+
+  return { bucket, objectPath };
 }
 
 function parseCsvText(text: string) {
@@ -141,6 +154,28 @@ function rowsToObjects(rows: string[][]) {
 }
 
 async function loadCsvFile(): Promise<LoadedZipTrendFile> {
+  const storageConfig = getSupabaseStorageConfig();
+
+  if (storageConfig) {
+    try {
+      const storageFile = await loadTextFromSupabaseStorage(
+        storageConfig.bucket,
+        storageConfig.objectPath,
+      );
+      const parsedRows = parseCsvText(storageFile.text);
+      const { headers, rows } = rowsToObjects(parsedRows);
+
+      return {
+        absolutePath: storageFile.sourcePath,
+        mtimeMs: storageFile.mtimeMs,
+        headers,
+        rows,
+      };
+    } catch {
+      // Fall back to local file path if storage is unavailable.
+    }
+  }
+
   const absolutePath = getCsvPath();
 
   let fileStat;

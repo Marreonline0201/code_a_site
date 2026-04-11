@@ -3,12 +3,12 @@
 @import "shadcn/tailwind.css";
 @import "leaflet/dist/leaflet.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-theme="__never__"] *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Aptos", "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-roboto), "Roboto", "Segoe UI", Arial, ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Consolas", "SFMono-Regular", "Liberation Mono", ui-monospace, monospace;
   --font-heading: var(--font-sans);
   --font-display: var(--font-sans);
@@ -74,6 +74,10 @@
 }
 
 :root {
+  color-scheme: light;
+  --font-playfair: var(--font-roboto);
+  --font-nunito: var(--font-roboto);
+
   /* Ocean Light Theme */
   --background: oklch(0.97 0.005 200);
   --foreground: oklch(0.2 0.02 220);
@@ -126,7 +130,7 @@
   --sidebar-ring: oklch(0.55 0.12 195);
 }
 
-.dark {
+:root[data-theme="__never__"] {
   /* Ocean Dark Theme */
   --background: oklch(0.17 0.03 230);
   --foreground: oklch(0.93 0.01 200);
@@ -207,12 +211,12 @@
   box-shadow: 0 10px 15px -3px oklch(0 0 0 / 0.05);
 }
 
-.dark .glass {
+:root[data-theme="__never__"] .glass {
   background: oklch(1 0 0 / 0.05);
   border-color: oklch(1 0 0 / 0.1);
 }
 
-.dark .glass-card {
+:root[data-theme="__never__"] .glass-card {
   background: oklch(1 0 0 / 0.05);
   border-color: oklch(1 0 0 / 0.1);
   box-shadow: 0 10px 15px -3px oklch(0 0 0 / 0.2);

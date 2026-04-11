@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Nunito } from "next/font/google";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+const roboto = Roboto({
   subsets: ["latin"],
-  weight: ["700", "800", "900"],
-  variable: "--font-playfair",
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-roboto",
   display: "swap",
-});
-
-const nunito = Nunito({
-  subsets: ["latin"],
-  weight: ["800", "900"],
-  variable: "--font-nunito",
-  display: "swap",
+  fallback: ["system-ui", "Arial", "sans-serif"],
 });
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -61,14 +55,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`h-full antialiased ${playfair.variable} ${nunito.variable}`} suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(t==null&&window.matchMedia("(prefers-color-scheme:dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})();`,
-          }}
-        />
-      </head>
+    <html lang="en" className={`h-full antialiased ${roboto.className} ${roboto.variable}`}>
       <body className="min-h-full flex flex-col">
         <JsonLd
           data={{
