@@ -175,6 +175,18 @@ export async function resolveCoverageCoordinate(
   index: number,
   total: number,
 ): Promise<CoverageCoordinate> {
+  // Prefer ArcGIS centroid coordinates (already resolved, no API call needed)
+  if (system.Latitude != null && system.Longitude != null &&
+      Number.isFinite(system.Latitude) && Number.isFinite(system.Longitude)) {
+    return {
+      latitude: system.Latitude,
+      longitude: system.Longitude,
+      source: "geocoded" as const,
+      label: cleanString(system.CitiesServed) ?? cleanString(system.CountiesServed) ?? STATE_NAMES[system.StateCode] ?? system.StateCode,
+    };
+  }
+
+  // Fall back to Nominatim geocoding
   const candidates = buildQueryCandidates(system);
 
   for (const candidate of candidates) {

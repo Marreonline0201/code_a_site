@@ -63,6 +63,8 @@ export interface EchoWaterSystem {
   ViolationCategories: string | null;
   SDWA3yrComplQtrsHistory: string;
   ServiceAreaTypeDesc: string | null;
+  Latitude: number | null;
+  Longitude: number | null;
 }
 
 async function enviroFetch(url: string): Promise<Response> {
@@ -160,12 +162,28 @@ function enviroToEcho(
     ViolationCategories: categories.join(",") || null,
     SDWA3yrComplQtrsHistory: "",
     ServiceAreaTypeDesc: null,
+    Latitude: null,
+    Longitude: null,
   };
 }
 
+/* ── ArcGIS Water System Boundaries API ── */
+const ARCGIS_BASE = "https://services.arcgis.com/cJ9YHowT8TU7DUyn/ArcGIS/rest/services/Water_System_Boundaries/FeatureServer/0/query";
+
+interface ArcGISFeature {
+  attributes: {
+    PWSID: string;
+    PWS_Name: string;
+    Population_Served_Count: number | null;
+    Primacy_Agency: string;
+  };
+  centroid?: { x: number; y: number };
+}
+
 /**
- * Search water systems by state + optional county/city.
- * Uses EPA Envirofacts API.
+ * Search water systems by state + optional county.
+ * Uses EPA ArcGIS Water_System_Boundaries for real coordinates,
+ * enriched with violations from Envirofacts.
  */
 export async function searchWaterSystems(params: {
   state?: string;
@@ -178,94 +196,58 @@ export async function searchWaterSystems(params: {
   if (!state) return [];
 
   const st = state.toUpperCase();
-  // Fetch more than needed so we can sort by population and return the top ones
-  const fetchLimit = Math.max(limit * 4, 100);
 
-  // Step 1: Get PWSIDs — if county provided, look up via GEOGRAPHIC_AREA first
-  let pwsids: string[] | null = null;
+  // Build ArcGIS query — PWSID starts with state code
+  let whereClause = `PWSID LIKE '${st}%'`;
   if (county) {
-    // GEOGRAPHIC_AREA uses STATE_SERVED (not STATE_CODE)
+    // ArcGIS doesn't have county field, so filter via Envirofacts GEOGRAPHIC_AREA
     const geoUrl = `${ENVIRO_BASE}/GEOGRAPHIC_AREA/COUNTY_SERVED/${encodeURIComponent(county.toUpperCase())}/STATE_SERVED/${st}/rows/0:199/json`;
-    const geoRes = await enviroFetch(geoUrl);
-    if (geoRes.ok) {
-      const geoData = await geoRes.json();
-      if (Array.isArray(geoData)) {
-        pwsids = [...new Set(geoData.map((g: { pwsid: string }) => g.pwsid))];
-      }
-    }
-  }
-
-  // Step 2: Fetch water systems
-  let systems: EnviroSystem[] = [];
-  if (pwsids && pwsids.length > 0) {
-    // Fetch systems by PWSID in small batches (5 at a time, max 30 total)
-    const ids = pwsids.slice(0, 30);
-    for (let i = 0; i < ids.length; i += 5) {
-      const batch = ids.slice(i, i + 5);
-      const fetches = batch.map(async (id) => {
-        const url = `${ENVIRO_BASE}/WATER_SYSTEM/PWSID/${id}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A/rows/0:0/json`;
-        try {
-          const res = await enviroFetch(url);
-          if (!res.ok) return null;
-          const data = await res.json();
-          return Array.isArray(data) && data.length > 0 ? data[0] : null;
-        } catch { return null; }
-      });
-      const results = await Promise.all(fetches);
-      systems.push(...(results.filter(Boolean) as EnviroSystem[]));
-    }
-  } else if (city) {
-    // City search — single targeted query
-    const url = `${ENVIRO_BASE}/WATER_SYSTEM/STATE_CODE/${st}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A/CITY_NAME/${encodeURIComponent(city.toUpperCase())}/rows/0:99/json`;
-    const res = await enviroFetch(url);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) systems = data;
-    }
-  } else {
-    // State search — sample from multiple offsets to cover all geographic areas.
-    // PWSIDs are ordered by county code, so different offsets reach different counties.
-    // Fetch pages in parallel from spread-out positions in the dataset.
-    const countUrl = `${ENVIRO_BASE}/WATER_SYSTEM/STATE_CODE/${st}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A/count/json`;
-    let totalCount = 1000;
     try {
-      const countRes = await enviroFetch(countUrl);
-      if (countRes.ok) {
-        const countData = await countRes.json();
-        totalCount = countData?.TOTALQUERYRESULTS ?? 1000;
+      const geoRes = await enviroFetch(geoUrl);
+      if (geoRes.ok) {
+        const geoData = await geoRes.json();
+        if (Array.isArray(geoData) && geoData.length > 0) {
+          const ids = [...new Set(geoData.map((g: { pwsid: string }) => g.pwsid))].slice(0, 50);
+          whereClause = `PWSID IN (${ids.map((id) => `'${id}'`).join(",")})`;
+        }
       }
-    } catch { /* use default */ }
-
-    // Sample systems from evenly spaced positions across the full dataset
-    // to cover all geographic areas (PWSIDs are ordered by county code).
-    // Use many small pages to avoid gaps — e.g. NY has 2202 systems,
-    // 20 pages × 25 rows = 500 systems covering every ~110 rows.
-    const pageSize = 25;
-    const numPages = Math.min(20, Math.ceil(totalCount / pageSize));
-    const stride = Math.max(1, Math.floor(totalCount / numPages));
-    const offsets = [...new Set(
-      Array.from({ length: numPages }, (_, i) =>
-        Math.min(i * stride, Math.max(0, totalCount - pageSize))
-      )
-    )];
-
-    const pageFetches = offsets.map(async (offset) => {
-      const end = Math.min(offset + pageSize - 1, totalCount - 1);
-      const url = `${ENVIRO_BASE}/WATER_SYSTEM/STATE_CODE/${st}/PWS_TYPE_CODE/CWS/PWS_ACTIVITY_CODE/A/rows/${offset}:${end}/json`;
-      try {
-        const res = await enviroFetch(url);
-        if (!res.ok) return [];
-        const data = await res.json();
-        return Array.isArray(data) ? data : [];
-      } catch { return []; }
-    });
-    const pages = await Promise.all(pageFetches);
-    systems = pages.flat();
+    } catch { /* fall back to state-level search */ }
   }
 
-  // Sort by population (largest first) and take top results
-  systems.sort((a, b) => (b.population_served_count ?? 0) - (a.population_served_count ?? 0));
-  systems = systems.slice(0, limit);
+  // Query ArcGIS — sorted by population, with centroids for coordinates
+  const arcParams = new URLSearchParams({
+    where: whereClause,
+    outFields: "PWSID,PWS_Name,Population_Served_Count,Primacy_Agency",
+    returnGeometry: "false",
+    returnCentroid: "true",
+    outSR: "4326",
+    f: "json",
+    resultRecordCount: String(limit),
+    orderByFields: "Population_Served_Count DESC",
+  });
+
+  const arcRes = await enviroFetch(`${ARCGIS_BASE}?${arcParams.toString()}`);
+  if (!arcRes.ok) return [];
+  const arcData = await arcRes.json();
+  const features: ArcGISFeature[] = arcData?.features ?? [];
+  if (features.length === 0) return [];
+
+  // Map ArcGIS features to EnviroSystem-like objects for the existing pipeline
+  const systems: EnviroSystem[] = features.map((f) => ({
+    pwsid: f.attributes.PWSID,
+    pws_name: f.attributes.PWS_Name,
+    state_code: st,
+    population_served_count: f.attributes.Population_Served_Count,
+    pws_type_code: "CWS",
+    owner_type_code: null,
+    primary_source_code: null,
+    city_name: null,
+    zip_code: null,
+    pws_activity_code: "A",
+    // Store coordinates for the map
+    _lat: f.centroid?.y ?? null,
+    _lng: f.centroid?.x ?? null,
+  })) as (EnviroSystem & { _lat: number | null; _lng: number | null })[];
 
   if (systems.length === 0) return [];
 
@@ -289,10 +271,14 @@ export async function searchWaterSystems(params: {
     vioByPws.set(v.pwsid, arr);
   }
 
-  // Step 4: Map to EchoWaterSystem interface
-  return systems.map((sys) =>
-    enviroToEcho(sys, vioByPws.get(sys.pwsid) ?? [], [], [])
-  );
+  // Step 4: Map to EchoWaterSystem interface, with ArcGIS coordinates
+  return systems.map((sys) => {
+    const echo = enviroToEcho(sys, vioByPws.get(sys.pwsid) ?? [], [], []);
+    const withCoords = sys as EnviroSystem & { _lat?: number | null; _lng?: number | null };
+    echo.Latitude = withCoords._lat ?? null;
+    echo.Longitude = withCoords._lng ?? null;
+    return echo;
+  });
 }
 
 /** Lead/copper test result */
