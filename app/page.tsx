@@ -105,17 +105,18 @@ export default async function HomePage() {
         </ScrollReveal>
 
         <StaggerGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {/* Each card: problem → mineral → benefit → brand range */}
           <Link href="/minerals/calcium" className="group">
             <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <Bone className="size-7 text-ocean-surface mb-4" />
-              <p className="text-lg sm:text-xl font-semibold text-foreground mb-2">Weak bones? Stiff joints?</p>
-              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Calcium</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Strengthens bones and teeth, supports nerve signaling and muscle contraction.
+              <p className="text-lg sm:text-xl font-semibold mb-2">
+                <span className="text-amber-500">Weak bones?</span> Stiff joints?
+              </p>
+              <h3 className="text-2xl font-bold text-ocean-surface mb-2 group-hover:text-ocean-mid transition-colors">Calcium</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Builds bone density and supports muscle contraction.
               </p>
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-xs text-muted-foreground">Brand range</span>
                 <span className="text-sm font-bold text-ocean-surface">0 – 348 mg/L</span>
               </div>
             </div>
@@ -124,13 +125,15 @@ export default async function HomePage() {
           <Link href="/minerals/magnesium" className="group">
             <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <Brain className="size-7 text-ocean-surface mb-4" />
-              <p className="text-lg sm:text-xl font-semibold text-foreground mb-2">Poor sleep? Low energy?</p>
-              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Magnesium</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Regulates 300+ enzyme reactions. Improves sleep quality, reduces muscle cramps, boosts energy production.
+              <p className="text-lg sm:text-xl font-semibold mb-2">
+                <span className="text-violet-500">Poor sleep?</span> Low energy?
+              </p>
+              <h3 className="text-2xl font-bold text-ocean-surface mb-2 group-hover:text-ocean-mid transition-colors">Magnesium</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Improves sleep, reduces cramps, powers 300+ enzymes.
               </p>
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-xs text-muted-foreground">Brand range</span>
                 <span className="text-sm font-bold text-ocean-surface">0 – 108 mg/L</span>
               </div>
             </div>
@@ -139,13 +142,15 @@ export default async function HomePage() {
           <Link href="/minerals/sodium" className="group">
             <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <Heart className="size-7 text-ocean-surface mb-4" />
-              <p className="text-lg sm:text-xl font-semibold text-foreground mb-2">Watching blood pressure?</p>
-              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Sodium</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Essential for fluid balance and nerve function — but too much raises blood pressure. Some waters have 20x more than others.
+              <p className="text-lg sm:text-xl font-semibold mb-2">
+                <span className="text-rose-500">High blood pressure?</span>
+              </p>
+              <h3 className="text-2xl font-bold text-ocean-surface mb-2 group-hover:text-ocean-mid transition-colors">Sodium</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Essential for nerves, but some waters have 20x more than others.
               </p>
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-xs text-muted-foreground">Brand range</span>
                 <span className="text-sm font-bold text-ocean-surface">0 – 118 mg/L</span>
               </div>
             </div>
@@ -154,13 +159,15 @@ export default async function HomePage() {
           <Link href="/minerals/bicarbonate" className="group">
             <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <Zap className="size-7 text-ocean-surface mb-4" />
-              <p className="text-lg sm:text-xl font-semibold text-foreground mb-2">Post-workout fatigue?</p>
-              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Bicarbonate</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Neutralizes lactic acid, aids digestion, and buffers your body&apos;s pH. Athletes drink bicarbonate-rich water for faster recovery.
+              <p className="text-lg sm:text-xl font-semibold mb-2">
+                <span className="text-orange-500">Post-workout</span> fatigue?
+              </p>
+              <h3 className="text-2xl font-bold text-ocean-surface mb-2 group-hover:text-ocean-mid transition-colors">Bicarbonate</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Neutralizes lactic acid. Athletes use it for faster recovery.
               </p>
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-xs text-muted-foreground">Brand range</span>
                 <span className="text-sm font-bold text-ocean-surface">0 – 1,816 mg/L</span>
               </div>
             </div>
@@ -169,13 +176,15 @@ export default async function HomePage() {
           <Link href="/minerals/silica" className="group">
             <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <Droplets className="size-7 text-ocean-surface mb-4" />
-              <p className="text-lg sm:text-xl font-semibold text-foreground mb-2">Dull skin? Brittle nails?</p>
-              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Silica</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Promotes skin elasticity, hair thickness, and nail strength. Fiji water is famous for its high silica — 93 mg/L.
+              <p className="text-lg sm:text-xl font-semibold mb-2">
+                <span className="text-pink-500">Dull skin?</span> Brittle nails?
+              </p>
+              <h3 className="text-2xl font-bold text-ocean-surface mb-2 group-hover:text-ocean-mid transition-colors">Silica</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Boosts skin elasticity, hair thickness, and nail strength.
               </p>
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-xs text-muted-foreground">Brand range</span>
                 <span className="text-sm font-bold text-ocean-surface">0 – 93 mg/L</span>
               </div>
             </div>
@@ -184,13 +193,15 @@ export default async function HomePage() {
           <Link href="/minerals/potassium" className="group">
             <div className="glass-card p-6 h-full hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <Shield className="size-7 text-ocean-surface mb-4" />
-              <p className="text-lg sm:text-xl font-semibold text-foreground mb-2">Muscle cramps? Irregular heartbeat?</p>
-              <h3 className="text-xl font-bold mb-2 group-hover:text-ocean-surface transition-colors">Potassium</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                Balances sodium, regulates heart rhythm, and prevents muscle cramps. Most people don&apos;t get enough daily potassium.
+              <p className="text-lg sm:text-xl font-semibold mb-2">
+                <span className="text-emerald-500">Muscle cramps?</span> Irregular heartbeat?
+              </p>
+              <h3 className="text-2xl font-bold text-ocean-surface mb-2 group-hover:text-ocean-mid transition-colors">Potassium</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Balances sodium and regulates heart rhythm.
               </p>
               <div className="flex items-center justify-between pt-3 border-t border-border">
-                <span className="text-xs text-muted-foreground">Range across brands</span>
+                <span className="text-xs text-muted-foreground">Brand range</span>
                 <span className="text-sm font-bold text-ocean-surface">0.3 – 11 mg/L</span>
               </div>
             </div>
