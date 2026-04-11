@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { getWaterSystemDetail, fetchLeadAndCopper, fetchViolationDetails } from "@/lib/epa/client";
+import { resolveCoverageCoordinate } from "@/lib/epa/coverage-map.server";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,7 @@ export async function GET(
     const hasHealthViolation = system.HealthFlag === "Yes";
     const isSeriousViolator = system.SeriousViolator === "Yes";
     const hasCurrentViolation = system.CurrVioFlag === "1";
+    const coordinate = await resolveCoverageCoordinate(system, 0, 1);
 
     let status: "good" | "watch" | "alert" = "good";
     if (isSeriousViolator || hasHealthViolation) status = "alert";
@@ -65,6 +67,10 @@ export async function GET(
         violationCategories: system.ViolationCategories?.split(",").filter(Boolean) ?? [],
         complianceHistory: system.SDWA3yrComplQtrsHistory,
         detailUrl: system.DfrUrl,
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+        coordinateSource: coordinate.source,
+        coordinateLabel: coordinate.label,
       },
       timestamp: new Date().toISOString(),
     };

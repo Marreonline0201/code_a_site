@@ -1,4 +1,9 @@
-import type { TapWaterMeta, TapWaterSample, TapWaterSearchResponse } from "./types";
+import type {
+  TapWaterMeta,
+  TapWaterSample,
+  TapWaterSearchResponse,
+  TapWaterZipTrendSummary,
+} from "./types";
 
 export type TapWaterPhase =
   | "idle"
@@ -14,6 +19,7 @@ export type TapWaterPageState = {
   phase: TapWaterPhase;
   data: TapWaterSample[];
   recentTests: TapWaterSample[];
+  zipTrends: TapWaterZipTrendSummary | null;
   meta: TapWaterMeta | null;
   leadSummary: TapWaterSearchResponse["leadSummary"] | null;
   distribution: TapWaterSearchResponse["distribution"] | null;
@@ -30,6 +36,7 @@ export type TapWaterAction =
       data: TapWaterSample[];
       meta: TapWaterMeta;
       recentTests: TapWaterSample[];
+      zipTrends?: TapWaterZipTrendSummary | null;
       leadSummary: TapWaterSearchResponse["leadSummary"];
       distribution: TapWaterSearchResponse["distribution"];
       notes: string | undefined;
@@ -43,6 +50,7 @@ export const initialTapWaterState: TapWaterPageState = {
   phase: "idle",
   data: [],
   recentTests: [],
+  zipTrends: null,
   meta: null,
   leadSummary: null,
   distribution: null,
@@ -73,9 +81,13 @@ export function tapWaterReducer(
       return {
         ...state,
         submittedQuery: action.query,
-        phase: action.recentTests.length === 0 ? "empty" : "success",
+        phase:
+          action.recentTests.length === 0 && !(action.zipTrends?.records.length ?? 0)
+            ? "empty"
+            : "success",
         data: action.data,
         recentTests: action.recentTests,
+        zipTrends: action.zipTrends ?? null,
         meta: action.meta,
         leadSummary: action.leadSummary ?? null,
         distribution: action.distribution ?? null,

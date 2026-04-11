@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Droplets, Menu, X, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import type { User } from "@supabase/supabase-js";
 
 const navLinks = [
@@ -80,13 +79,6 @@ export function Header() {
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              {/* CMD+K hint — desktop only */}
-              <kbd className="hidden md:inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">
-                <span className="text-xs">Ctrl</span>K
-              </kbd>
-
-              <ThemeToggle />
-
               <button
                 onClick={async () => {
                   await supabase.auth.signOut();
@@ -99,6 +91,11 @@ export function Header() {
                 <LogOut className="size-4" />
                 Sign Out
               </button>
+
+              {/* CMD+K hint — desktop only */}
+              <kbd className="hidden md:inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2 py-1 text-xs text-muted-foreground ml-1">
+                <span className="text-xs">Ctrl</span>K
+              </kbd>
             </>
           ) : (
             <div className="flex items-center gap-2">

@@ -32,13 +32,13 @@ export function ProductCard({ brand, showAffiliate = false }: ProductCardProps) 
 
         {/* Bottle image */}
         {brandImage && (
-          <div className="flex justify-center my-4">
+          <div className="flex justify-center my-5">
             <Image
               src={brandImage}
               alt={`${brand.name} bottle`}
-              width={60}
-              height={150}
-              className="object-contain h-[120px] drop-shadow-[0_4px_12px_rgba(0,0,0,0.15)] group-hover:scale-105 transition-transform duration-300"
+              width={80}
+              height={190}
+              className="object-contain h-[155px] md:h-[175px] drop-shadow-[0_4px_12px_rgba(0,0,0,0.15)] group-hover:scale-105 transition-transform duration-300"
               unoptimized
             />
           </div>

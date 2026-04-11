@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
         nearbySummary: result.nearbySummary,
         leadSummary: result.leadSummary,
         distribution: result.distribution,
+        zipTrends: result.zipTrends,
         recentTests: result.recentTests.map(serializeSample),
         notes: result.notes,
         filters,

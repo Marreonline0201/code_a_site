@@ -13,6 +13,31 @@
 
 const BASE = "https://echodata.epa.gov/echo/sdw_rest_services";
 const FETCH_TIMEOUT_MS = 20_000;
+const ERROR_SNIPPET_LENGTH = 320;
+
+export class EpaApiError extends Error {
+  status?: number;
+  url: string;
+  bodySnippet?: string;
+  code?: "TIMEOUT" | "NETWORK" | "BAD_JSON";
+
+  constructor(
+    message: string,
+    options: {
+      url: string;
+      status?: number;
+      bodySnippet?: string;
+      code?: "TIMEOUT" | "NETWORK" | "BAD_JSON";
+    },
+  ) {
+    super(message);
+    this.name = "EpaApiError";
+    this.url = options.url;
+    this.status = options.status;
+    this.bodySnippet = options.bodySnippet;
+    this.code = options.code;
+  }
+}
 
 export interface EchoWaterSystem {
   PWSName: string;
@@ -51,9 +76,47 @@ async function echoFetch(url: string): Promise<Response> {
       signal: controller.signal,
       headers: { Accept: "application/json" },
     });
+
+    if (!res.ok) {
+      const bodySnippet = (await res.text().catch(() => "")).slice(0, ERROR_SNIPPET_LENGTH);
+      throw new EpaApiError(`EPA request failed with status ${res.status}`, {
+        url,
+        status: res.status,
+        bodySnippet,
+      });
+    }
+
     return res;
+  } catch (error) {
+    if (error instanceof EpaApiError) {
+      throw error;
+    }
+
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new EpaApiError("EPA request timed out", { url, code: "TIMEOUT" });
+    }
+
+    throw new EpaApiError("EPA request failed due to a network error", {
+      url,
+      code: "NETWORK",
+    });
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function readJson<T>(res: Response, requestUrl: string): Promise<T> {
+  const raw = await res.text();
+
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    throw new EpaApiError("EPA response was not valid JSON", {
+      url: requestUrl,
+      status: res.status,
+      code: "BAD_JSON",
+      bodySnippet: raw.slice(0, ERROR_SNIPPET_LENGTH),
+    });
   }
 }
 
@@ -76,8 +139,8 @@ export async function searchWaterSystems(params: {
 
   if (zip) {
     // ZIP search: look up by state + city derived from ZIP, or by county
-    // ECHO doesn't support direct ZIP search well, so we search by state
-    // and let the user browse. We'll add the ZIP to help narrow results.
+    // ECHO does not support direct ZIP search well, so we search by state
+    // and let the user browse. We add optional fields to narrow results.
     if (state) {
       queryParams.set("p_st", state.toUpperCase());
     }
@@ -93,29 +156,33 @@ export async function searchWaterSystems(params: {
     if (city) queryParams.set("p_ct", city.toUpperCase());
   }
 
-  // Only active community water systems
+  // Only active community water systems.
   queryParams.set("p_pws_activity_status", "A");
   queryParams.set("p_pws_type", "CWS");
 
-  // Step 1: Submit search → get QueryID
+  // Step 1: submit search and get QueryID.
   const searchUrl = `${BASE}.get_systems?${queryParams.toString()}`;
   const searchRes = await echoFetch(searchUrl);
-  const searchData = await searchRes.json();
+  const searchData = await readJson<{ Results?: { QueryID?: string; QueryRows?: string } }>(
+    searchRes,
+    searchUrl,
+  );
 
-  const queryId = searchData?.Results?.QueryID;
-  const totalRows = parseInt(searchData?.Results?.QueryRows ?? "0", 10);
-
+  const queryId = searchData.Results?.QueryID;
+  const totalRows = parseInt(searchData.Results?.QueryRows ?? "0", 10);
   if (!queryId || totalRows === 0) {
     return [];
   }
 
-  // Step 2: Fetch actual results using QueryID
+  // Step 2: fetch actual rows from QueryID.
   const resultUrl = `${BASE}.get_qid?output=JSON&qid=${queryId}&responseset=${limit}`;
   const resultRes = await echoFetch(resultUrl);
-  const resultData = await resultRes.json();
+  const resultData = await readJson<{ Results?: { WaterSystems?: EchoWaterSystem[] } }>(
+    resultRes,
+    resultUrl,
+  );
 
-  const systems: EchoWaterSystem[] = resultData?.Results?.WaterSystems ?? [];
-  return systems;
+  return resultData.Results?.WaterSystems ?? [];
 }
 
 /** Lead/copper test result */
@@ -147,11 +214,23 @@ export interface ViolationDetail {
  */
 export async function fetchLeadAndCopper(pwsid: string): Promise<LeadCopperResult | null> {
   try {
-    const res = await echoFetch(
-      `https://echodata.epa.gov/echo/dfr_rest_services.get_sdwa_lead_and_copper?output=JSON&p_id=${pwsid}`
+    const requestUrl =
+      `https://echodata.epa.gov/echo/dfr_rest_services.get_sdwa_lead_and_copper?output=JSON&p_id=${pwsid}`;
+    const res = await echoFetch(requestUrl);
+    const data = await readJson<{ Results?: { LeadAndCopperRule5Yr?: { Sources?: Array<Record<string, unknown>> } } }>(
+      res,
+      requestUrl,
     );
-    const data = await res.json();
-    const source = data?.Results?.LeadAndCopperRule5Yr?.Sources?.[0];
+    const source = data?.Results?.LeadAndCopperRule5Yr?.Sources?.[0] as
+      | {
+          LeadSamples?: Array<Record<string, string>>;
+          CopperSamples?: Array<Record<string, string>>;
+          PbALE?: string | null;
+          CuALE?: string | null;
+          PbViol?: string | null;
+          CuViol?: string | null;
+        }
+      | undefined;
     if (!source) return null;
 
     return {
@@ -180,10 +259,14 @@ export async function fetchLeadAndCopper(pwsid: string): Promise<LeadCopperResul
  */
 export async function fetchViolationDetails(pwsid: string): Promise<ViolationDetail[]> {
   try {
-    const res = await echoFetch(
-      `https://echodata.epa.gov/echo/dfr_rest_services.get_sdwa_violations?output=JSON&p_id=${pwsid}`
-    );
-    const data = await res.json();
+    const requestUrl =
+      `https://echodata.epa.gov/echo/dfr_rest_services.get_sdwa_violations?output=JSON&p_id=${pwsid}`;
+    const res = await echoFetch(requestUrl);
+    const data = await readJson<{
+      Results?: {
+        ViolationsEnforcementActions?: { Sources?: Array<{ Violations?: Array<Record<string, unknown>> }> };
+      };
+    }>(res, requestUrl);
     const source = data?.Results?.ViolationsEnforcementActions?.Sources?.[0];
     if (!source?.Violations) return [];
 
@@ -203,7 +286,7 @@ export async function fetchViolationDetails(pwsid: string): Promise<ViolationDet
           type: ea.EnforcementType ?? "",
           desc: ea.EnforcementActionTypeDesc ?? "",
           agency: ea.Agency ?? "",
-        })
+        }),
       ),
     }));
   } catch {
@@ -223,14 +306,17 @@ export async function getWaterSystemDetail(pwsid: string): Promise<EchoWaterSyst
 
   const searchUrl = `${BASE}.get_systems?${queryParams.toString()}`;
   const searchRes = await echoFetch(searchUrl);
-  const searchData = await searchRes.json();
+  const searchData = await readJson<{ Results?: { QueryID?: string } }>(searchRes, searchUrl);
 
   const queryId = searchData?.Results?.QueryID;
   if (!queryId) return null;
 
   const resultUrl = `${BASE}.get_qid?output=JSON&qid=${queryId}&responseset=1`;
   const resultRes = await echoFetch(resultUrl);
-  const resultData = await resultRes.json();
+  const resultData = await readJson<{ Results?: { WaterSystems?: EchoWaterSystem[] } }>(
+    resultRes,
+    resultUrl,
+  );
 
   const systems: EchoWaterSystem[] = resultData?.Results?.WaterSystems ?? [];
   return systems[0] ?? null;

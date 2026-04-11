@@ -1,6 +1,19 @@
-Place the NYC lead-at-the-tap CSV here by default:
+Place the combined NYC lead-testing CSV here by default:
 
-`data/Lead_At_The_Tap_Results.csv`
+`data/nyc-lead-testing.csv`
+
+This file is built from:
+
+- `data/Lead_At_The_Tap_Results.csv`
+- `data/lead_testing.csv`
+
+Duplicate rows are matched on `Kit ID + Zipcode`. When a row exists in both files,
+the `lead_testing.csv` values win for shared fields and the older export keeps the
+flush measurements that only it provides.
+
+The ZIP/year trend source used alongside that dataset is:
+
+`data/lead-testing2.csv`
 
 Optional local enrichment files used by the legacy nearest-sample geocode flow:
 
@@ -43,3 +56,15 @@ Expected source columns (active lead dataset):
 - `Copper First Draw (mg/L)`
 - `Copper 1-2 Minute Flush (mg/L)`
 - `Copper 5 minute Flush (mg/L)`
+
+ZIP trend source columns:
+
+- `Zipcode`
+- `YEAR`
+- `*TOTAL SAMPS ZIP`
+- `*TOTAL SAMPS W/LEAD`
+- `*% SAMPS WITH LEAD`
+- `AVG LEVEL FD`
+- `AVG LEVEL SD`
+- `*AVG ALL`
+- `*HIGHEST DRAW`

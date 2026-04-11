@@ -3,31 +3,21 @@
 import { useState, useCallback } from "react";
 import { Search, AlertTriangle, CheckCircle, Eye, ExternalLink, Droplets, Users, MapPin, Shield } from "lucide-react";
 import { WaterQualityMap } from "@/components/WaterQualityMap";
+import type { WaterQualityMapSystem } from "@/components/WaterQualityMap";
 
-interface WaterSystem {
-  pwsid: string;
-  name: string;
+interface WaterSystem extends WaterQualityMapSystem {
   type: string;
   source: string;
-  populationServed: number | null;
-  state: string;
-  citiesServed: string | null;
-  countiesServed: string | null;
   owner: string;
   serviceArea: string | null;
-  status: "good" | "watch" | "alert";
   isSeriousViolator: boolean;
   hasHealthViolation: boolean;
   hasCurrentViolation: boolean;
-  leadViolation: boolean;
-  copperViolation: boolean;
   quartersWithViolations: number;
-  rulesViolated3yr: number;
   contaminantsInCurrentViolation: string[];
   contaminantsInViolation3yr: string[];
   violationCategories: string[];
   complianceHistory: string;
-  detailUrl: string;
 }
 
 interface SearchResult {
@@ -347,8 +337,10 @@ export function EpaSearchClient() {
 
       const res = await fetch(`/api/water-quality?${params.toString()}`);
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "Search failed");
+        const data = await res.json().catch(() => ({} as { error?: string; debugId?: string }));
+        const message = data.error ?? "Search failed";
+        const withDebugId = data.debugId ? `${message} (debug: ${data.debugId})` : message;
+        throw new Error(withDebugId);
       }
       const data: SearchResult = await res.json();
       setResults(data);

@@ -1,6 +1,7 @@
 import type { NumericFieldKey } from "./types";
 
-export const DEFAULT_WATER_SAMPLES_CSV_PATH = "data/Lead_At_The_Tap_Results.csv";
+export const DEFAULT_WATER_SAMPLES_CSV_PATH = "data/nyc-lead-testing.csv";
+export const DEFAULT_WATER_ZIP_TRENDS_CSV_PATH = "data/lead-testing2.csv";
 
 export const SOURCE_COLUMNS = {
   sampleNumber: "Kit ID",

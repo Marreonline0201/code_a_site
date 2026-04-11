@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { Search } from "lucide-react";
 import { useTapWaterSearch } from "@/lib/hooks/use-tap-water-search";
 import { formatLeadValue, formatSampleDate } from "@/lib/tap-water/format";
-import type { TapWaterSample } from "@/lib/tap-water/types";
+import type { TapWaterSample, TapWaterZipTrendSummary } from "@/lib/tap-water/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,14 @@ function formatCountPercent(value: { count: number; percent: number }) {
   return `${value.count} (${formatPercent(value.percent)})`;
 }
 
+function formatTrendPercent(value: number | null | undefined) {
+  if (value == null || Number.isNaN(value)) {
+    return "N/A";
+  }
+
+  return `${value.toFixed(1)}%`;
+}
+
 function RecentTestCard({ sample }: { sample: TapWaterSample }) {
   return (
     <Card>
@@ -63,6 +71,75 @@ function RecentTestCard({ sample }: { sample: TapWaterSample }) {
           value={formatLeadValue(sample.copperFlushOneToTwo.value)}
         />
         <SummaryField label="5 Min Flush Copper" value={formatLeadValue(sample.copperFlushFive.value)} />
+      </CardContent>
+    </Card>
+  );
+}
+
+function ZipTrendTable({ summary }: { summary: TapWaterZipTrendSummary }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">ZIP Trend Summary</CardTitle>
+        <CardDescription>
+          {summary.zipCode ? `ZIP ${summary.zipCode}` : "ZIP"} • Annual lead summary data.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <SummaryField label="Years Covered" value={summary.years.join(", ")} />
+          <SummaryField label="Records" value={String(summary.recordCount)} />
+          <SummaryField label="Total Samples" value={String(summary.totalSamples)} />
+          <SummaryField
+            label="Samples With Lead"
+            value={String(summary.samplesWithLead)}
+          />
+          <SummaryField
+            label="Avg % With Lead"
+            value={formatTrendPercent(summary.averagePercentWithLead)}
+          />
+            <SummaryField
+              label="Avg First Draw"
+            value={formatLeadValue(summary.averageFirstDrawMgL)}
+          />
+          <SummaryField
+            label="Avg Second Draw"
+            value={formatLeadValue(summary.averageSecondDrawMgL)}
+          />
+          <SummaryField
+            label="Highest Draw"
+            value={formatLeadValue(summary.highestDrawMgL)}
+          />
+        </div>
+
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="min-w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Year</th>
+                <th className="px-3 py-2 text-right font-medium">Samples</th>
+                <th className="px-3 py-2 text-right font-medium">% With Lead</th>
+                <th className="px-3 py-2 text-right font-medium">Avg FD</th>
+                <th className="px-3 py-2 text-right font-medium">Avg SD</th>
+                <th className="px-3 py-2 text-right font-medium">Avg All</th>
+                <th className="px-3 py-2 text-right font-medium">Highest</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.records.map((record) => (
+                <tr key={`${record.zipCode}-${record.year}`} className="border-t border-border/60">
+                  <td className="px-3 py-2 font-medium">{record.year}</td>
+                  <td className="px-3 py-2 text-right">{record.totalSamples}</td>
+                  <td className="px-3 py-2 text-right">{formatTrendPercent(record.percentWithLead)}</td>
+                  <td className="px-3 py-2 text-right">{formatLeadValue(record.averageFirstDrawMgL)}</td>
+                  <td className="px-3 py-2 text-right">{formatLeadValue(record.averageSecondDrawMgL)}</td>
+                  <td className="px-3 py-2 text-right">{formatLeadValue(record.averageAllMgL)}</td>
+                  <td className="px-3 py-2 text-right">{formatLeadValue(record.highestDrawMgL)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
   );
@@ -116,6 +193,7 @@ export function TapWaterPageClient({
   const defaultController = useTapWaterSearch({ limit: 5 });
   const { state, setQuery, submitSearch } = controller ?? defaultController;
   const isLoading = state.phase === "loading";
+  const hasZipTrends = Boolean(state.zipTrends?.records.length);
 
   const onSubmit = useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -248,11 +326,13 @@ export function TapWaterPageClient({
         </Card>
       ) : null}
 
+      {hasZipTrends && state.zipTrends ? <ZipTrendTable summary={state.zipTrends} /> : null}
+
       {state.phase === "empty" ? (
         <Card>
           <CardContent className="py-8">
             <p className="text-sm text-muted-foreground">
-              No lead-at-the-tap samples were found for this ZIP code yet.
+              No individual lead-at-the-tap samples were found for this ZIP code yet.
             </p>
           </CardContent>
         </Card>
@@ -261,11 +341,22 @@ export function TapWaterPageClient({
       {state.phase === "success" ? (
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">Recent Tests</h2>
-          <div className="space-y-3">
-            {state.recentTests.map((sample) => (
-              <RecentTestCard key={sample.id} sample={sample} />
-            ))}
-          </div>
+          {state.recentTests.length > 0 ? (
+            <div className="space-y-3">
+              {state.recentTests.map((sample) => (
+                <RecentTestCard key={sample.id} sample={sample} />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="py-6">
+                <p className="text-sm text-muted-foreground">
+                  No individual sample rows were returned for this ZIP. The ZIP trend summary above
+                  still shows the year-by-year aggregate data.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </section>
       ) : null}
     </div>

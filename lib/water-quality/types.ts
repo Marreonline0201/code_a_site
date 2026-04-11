@@ -63,6 +63,33 @@ export type WaterDataset = {
   uniqueLocations: string[];
 };
 
+export type ZipLeadTrendRecord = {
+  zipCode: string;
+  year: number;
+  totalSamples: number;
+  samplesWithLead: number;
+  percentWithLead: number;
+  averageFirstDrawMgL: number | null;
+  averageSecondDrawMgL: number | null;
+  averageAllMgL: number | null;
+  highestDrawMgL: number | null;
+  raw: RawCsvRow;
+};
+
+export type ZipLeadTrendSummary = {
+  zipCode: string;
+  recordCount: number;
+  years: number[];
+  totalSamples: number;
+  samplesWithLead: number;
+  averagePercentWithLead: number | null;
+  averageFirstDrawMgL: number | null;
+  averageSecondDrawMgL: number | null;
+  averageAllMgL: number | null;
+  highestDrawMgL: number | null;
+  records: ZipLeadTrendRecord[];
+};
+
 export type NumericRangeFilter = {
   min?: number;
   max?: number;
@@ -167,6 +194,7 @@ export type NearbyQueryResult = {
   nearbySummary: NearbySummary;
   leadSummary: LeadSummary;
   distribution: LeadDistribution;
+  zipTrends?: ZipLeadTrendSummary | null;
   recentTests: NearbyWaterSample[];
   notes: string;
 };

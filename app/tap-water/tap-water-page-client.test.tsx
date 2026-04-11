@@ -144,6 +144,42 @@ test("renders lead overview, distribution, and recent tests on success", async (
             detected: { count: 0, percent: 0 },
             elevated: { count: 1, percent: 100 },
           },
+          zipTrends: {
+            zipCode: "11356",
+            recordCount: 2,
+            years: [2023, 2017],
+            totalSamples: 531,
+            samplesWithLead: 105,
+            averagePercentWithLead: 19.2,
+            averageFirstDrawMgL: 0.00142,
+            averageSecondDrawMgL: 0.0004,
+            averageAllMgL: 0.00091,
+            highestDrawMgL: 0.032,
+            records: [
+              {
+                zipCode: "11356",
+                year: 2023,
+                totalSamples: 352,
+                samplesWithLead: 71,
+                percentWithLead: 20,
+                averageFirstDrawMgL: 0.00178,
+                averageSecondDrawMgL: 0.001,
+                averageAllMgL: 0.00138,
+                highestDrawMgL: 0.279,
+              },
+              {
+                zipCode: "11356",
+                year: 2017,
+                totalSamples: 179,
+                samplesWithLead: 34,
+                percentWithLead: 19,
+                averageFirstDrawMgL: 0.00157,
+                averageSecondDrawMgL: 0.0001,
+                averageAllMgL: 0.000815,
+                highestDrawMgL: 0.032,
+              },
+            ],
+          },
           notes: "Lead results vary by home and plumbing conditions.",
         })}
       />,
@@ -151,6 +187,7 @@ test("renders lead overview, distribution, and recent tests on success", async (
 
     assert.ok(view.getByText("Lead Overview"));
     assert.ok(view.getByText("Distribution"));
+    assert.ok(view.getByText("ZIP Trend Summary"));
     assert.ok(view.getByText("Recent Tests"));
     assert.ok(view.getByText("Lead results vary by home and plumbing conditions."));
     assert.ok(view.getByText("Percent Detected (> 0)"));
@@ -205,6 +242,83 @@ test("renders empty state when no samples are returned", async () => {
     assert.ok(
       view.getByText(
         "No lead-at-the-tap samples were found for this ZIP code yet.",
+      ),
+    );
+  } finally {
+    cleanup();
+    teardown();
+  }
+});
+
+test("renders ZIP trend summary when no individual sample rows are returned", async () => {
+  const teardown = setupDomEnvironment();
+
+  try {
+    const view = render(
+      <TapWaterPageClient
+        controller={makeController({
+          query: "11356",
+          phase: "success",
+          data: [],
+          recentTests: [],
+          meta: {
+            zip: "11356",
+            count: 0,
+            total: 0,
+            page: 1,
+            pageSize: 0,
+            totalPages: 0,
+            sortBy: "sampleDate",
+            sortDir: "desc",
+            nearestMatches: [],
+          },
+          leadSummary: {
+            sampleCount: 0,
+            mostRecentTestDate: null,
+            medianFirstDraw: null,
+            maxFirstDraw: null,
+            percentDetected: 0,
+            percentElevated: 0,
+          },
+          distribution: {
+            notDetected: { count: 0, percent: 0 },
+            detected: { count: 0, percent: 0 },
+            elevated: { count: 0, percent: 0 },
+          },
+          zipTrends: {
+            zipCode: "11356",
+            recordCount: 1,
+            years: [2023],
+            totalSamples: 352,
+            samplesWithLead: 71,
+            averagePercentWithLead: 20,
+            averageFirstDrawMgL: 0.00178,
+            averageSecondDrawMgL: 0.001,
+            averageAllMgL: 0.00138,
+            highestDrawMgL: 0.279,
+            records: [
+              {
+                zipCode: "11356",
+                year: 2023,
+                totalSamples: 352,
+                samplesWithLead: 71,
+                percentWithLead: 20,
+                averageFirstDrawMgL: 0.00178,
+                averageSecondDrawMgL: 0.001,
+                averageAllMgL: 0.00138,
+                highestDrawMgL: 0.279,
+              },
+            ],
+          },
+          notes: "Lead results vary by home and plumbing conditions.",
+        })}
+      />,
+    );
+
+    assert.ok(view.getByText("ZIP Trend Summary"));
+    assert.ok(
+      view.getByText(
+        "No individual sample rows were returned for this ZIP. The ZIP trend summary above still shows the year-by-year aggregate data.",
       ),
     );
   } finally {

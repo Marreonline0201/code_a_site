@@ -1,27 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-interface WaterSystem {
-  pwsid: string;
-  name: string;
-  status: "good" | "watch" | "alert";
-  populationServed: number | null;
-  source: string;
-  citiesServed: string | null;
-  countiesServed: string | null;
-  hasHealthViolation: boolean;
-  leadViolation: boolean;
-  copperViolation: boolean;
-  rulesViolated3yr: number;
-  contaminantsInCurrentViolation: string[];
-  detailUrl: string;
-}
+import { useEffect, useMemo, useState } from "react";
+import * as L from "leaflet";
+import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
+import {
+  getApproximateCoveragePoint,
+  getMarkerRadius,
+  getStateCenter,
+  type WaterQualityMapSystem,
+} from "@/lib/epa/coverage-map";
 
 interface Props {
-  systems: WaterSystem[];
-  center: [number, number];
-  zoom: number;
+  systems: WaterQualityMapSystem[];
+  stateCode: string;
+}
+
+interface TileProviderConfig {
+  url: string;
+  attribution: string;
+  subdomains?: string[];
 }
 
 const statusColors = {
@@ -30,102 +27,174 @@ const statusColors = {
   good: "#22c55e",
 };
 
-// Generate deterministic pseudo-random positions around the state center
-// since we don't have exact lat/lng for each system
-function getSystemPosition(
-  system: WaterSystem,
-  center: [number, number],
-  index: number,
-  total: number,
-): [number, number] {
-  // Use a hash of the PWSID for consistent positioning
-  let hash = 0;
-  for (let i = 0; i < system.pwsid.length; i++) {
-    hash = (hash << 5) - hash + system.pwsid.charCodeAt(i);
-    hash |= 0;
+function getSystemPosition(system: WaterQualityMapSystem, index: number, total: number): [number, number] {
+  if (Number.isFinite(system.latitude) && Number.isFinite(system.longitude)) {
+    return [system.latitude, system.longitude];
   }
 
-  // Spread markers in a spiral pattern around the center
-  const angle = (index / total) * Math.PI * 2 + (hash % 100) / 100;
-  const radius = 0.3 + ((hash % 1000) / 1000) * 1.5; // 0.3 to 1.8 degrees spread
-
-  return [
-    center[0] + Math.cos(angle) * radius,
-    center[1] + Math.sin(angle) * radius * 1.3, // Wider horizontal spread
-  ];
+  return getApproximateCoveragePoint(system.pwsid, system.state, index, total);
 }
 
-function getMarkerRadius(populationServed: number | null): number {
-  if (!populationServed) return 6;
-  if (populationServed > 1_000_000) return 18;
-  if (populationServed > 500_000) return 14;
-  if (populationServed > 100_000) return 11;
-  if (populationServed > 10_000) return 8;
-  return 6;
+function FitToSystems({ points }: { points: [number, number][] }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (points.length === 0) {
+      return;
+    }
+
+    map.invalidateSize();
+
+    if (points.length === 1) {
+      map.setView(points[0], 9, { animate: false });
+      return;
+    }
+
+    const bounds = L.latLngBounds(points);
+    if (bounds.isValid()) {
+      map.fitBounds(bounds.pad(0.18), { animate: false, maxZoom: 11 });
+    }
+  }, [map, points]);
+
+  return null;
 }
 
-export default function WaterQualityMapInner({ systems, center, zoom }: Props) {
+function MarkerLegend() {
+  return (
+    <div className="absolute left-3 bottom-3 z-[500] rounded-md border border-white/15 bg-black/40 px-3 py-2 text-[11px] text-white/80 backdrop-blur-sm">
+      <div className="flex items-center gap-2">
+        <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+        <span>Geocoded</span>
+      </div>
+      <div className="mt-1 flex items-center gap-2">
+        <span className="h-2.5 w-2.5 rounded-full border border-white/30 bg-white/20" />
+        <span>Approximate fallback</span>
+      </div>
+    </div>
+  );
+}
+
+export default function WaterQualityMapInner({ systems, stateCode }: Props) {
   const [selectedPwsid, setSelectedPwsid] = useState<string | null>(null);
+  const [tileProviderIndex, setTileProviderIndex] = useState(0);
 
-  const positionedSystems = useMemo(() => {
-    return systems.map((system, index) => {
-      const [lat, lng] = getSystemPosition(system, center, index, systems.length);
-      // Map pseudo coordinates into a visible 0-100% viewport.
-      const x = Math.max(3, Math.min(97, 50 + ((lng - center[1]) * 18) / Math.max(1, zoom)));
-      const y = Math.max(6, Math.min(94, 50 - ((lat - center[0]) * 22) / Math.max(1, zoom)));
-      return { system, x, y };
-    });
-  }, [systems, center, zoom]);
+  const center = getStateCenter(stateCode);
+  const tileProviders: TileProviderConfig[] = [
+    {
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: ["a", "b", "c"],
+    },
+    {
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+      attribution:
+        "Tiles &copy; Esri &mdash; Source: Esri, HERE, Garmin, Intermap, increment P Corp., GEBCO, USGS, FAO, NPS, NRCAN, GeoBase, IGN, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), NOSTRA, &copy; OpenStreetMap contributors, and the GIS User Community",
+    },
+  ] as const;
+  const tileProvider = tileProviders[tileProviderIndex];
+
+  const positionedSystems = useMemo(
+    () =>
+      systems.map((system, index) => {
+        const position = getSystemPosition(system, index, systems.length);
+        const isApproximate =
+          system.coordinateSource === "approximate" ||
+          !Number.isFinite(system.latitude) ||
+          !Number.isFinite(system.longitude);
+
+        return {
+          system,
+          position,
+          isApproximate,
+        };
+      }),
+    [systems],
+  );
 
   const selected = selectedPwsid
     ? systems.find((system) => system.pwsid === selectedPwsid) ?? null
     : null;
 
   return (
-    <div className="w-full h-[400px] z-0 relative overflow-hidden bg-[#0a1628]">
+    <div className="relative h-[400px] w-full overflow-hidden bg-[#0a1628]">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.2),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(14,116,144,0.22),transparent_55%),linear-gradient(180deg,#0c1f34_0%,#0a1628_100%)]" />
-      <div className="absolute inset-0 opacity-25 [background-size:40px_40px] [background-image:linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)]" />
+      <div className="absolute inset-0 opacity-20 [background-size:40px_40px] [background-image:linear-gradient(to_right,rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.08)_1px,transparent_1px)]" />
 
-      {positionedSystems.map(({ system, x, y }) => {
-        const color = statusColors[system.status];
-        const size = getMarkerRadius(system.populationServed) * 2;
-        const selectedMarker = selectedPwsid === system.pwsid;
+      <MapContainer
+        center={center}
+        zoom={7}
+        className="relative z-10 h-full w-full"
+        scrollWheelZoom={false}
+        zoomControl
+      >
+        <TileLayer
+          attribution={tileProvider.attribution}
+          url={tileProvider.url}
+          subdomains={tileProvider.subdomains}
+          eventHandlers={{
+            tileerror: () => {
+              setTileProviderIndex((current) => {
+                if (current >= tileProviders.length - 1) {
+                  return current;
+                }
+                return current + 1;
+              });
+            },
+          }}
+        />
+        <FitToSystems points={positionedSystems.map(({ position }) => position)} />
 
-        return (
-          <button
-            type="button"
-            key={system.pwsid}
-            className="absolute rounded-full border border-white/30 shadow-[0_0_0_2px_rgba(0,0,0,0.2)] transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-            style={{
-              left: `${x}%`,
-              top: `${y}%`,
-              width: `${size}px`,
-              height: `${size}px`,
-              transform: "translate(-50%, -50%)",
-              backgroundColor: color,
-              opacity: selectedMarker ? 1 : 0.85,
-              boxShadow: selectedMarker
-                ? `0 0 0 3px ${color}66, 0 0 24px ${color}88`
-                : `0 0 0 1px ${color}66`,
-            }}
-            onClick={() => setSelectedPwsid(system.pwsid)}
-            title={`${system.name} (${system.pwsid})`}
-          >
-            <span className="sr-only">View details for {system.name}</span>
-          </button>
-        );
-      })}
+        {positionedSystems.map(({ system, position, isApproximate }) => {
+          const color = statusColors[system.status];
+          const selectedMarker = selectedPwsid === system.pwsid;
+          const radius = getMarkerRadius(system.populationServed) + (selectedMarker ? 2 : 0);
 
-      <div className="absolute left-3 top-3 rounded-md border border-white/15 bg-black/30 px-2 py-1 text-[11px] text-white/75 backdrop-blur-sm">
+          return (
+            <CircleMarker
+              key={system.pwsid}
+              center={position}
+              radius={radius}
+              eventHandlers={{
+                click: () => setSelectedPwsid(system.pwsid),
+              }}
+              pathOptions={{
+                color,
+                weight: selectedMarker ? 3 : 2,
+                fillColor: color,
+                fillOpacity: isApproximate ? 0.6 : selectedMarker ? 0.95 : 0.82,
+                opacity: isApproximate ? 0.72 : 1,
+                dashArray: isApproximate ? "4 4" : undefined,
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -2]} opacity={1} sticky>
+                <div className="text-xs">
+                  <div className="font-semibold">{system.name}</div>
+                  <div className="opacity-80">
+                    {system.coordinateLabel ?? system.citiesServed ?? system.countiesServed ?? "Unknown area"}
+                  </div>
+                  {isApproximate ? <div className="opacity-70">Approximate fallback</div> : null}
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          );
+        })}
+      </MapContainer>
+
+      <div className="absolute left-3 top-3 z-[500] rounded-md border border-white/15 bg-black/30 px-2 py-1 text-[11px] text-white/75 backdrop-blur-sm">
         Interactive coverage map
       </div>
 
-      <div className="absolute right-3 bottom-3 w-[min(92%,340px)] rounded-lg border border-white/15 bg-[#071322]/92 p-3 text-white shadow-xl backdrop-blur-sm">
+      <MarkerLegend />
+
+      <div className="absolute right-3 bottom-3 z-[500] w-[min(92%,360px)] rounded-lg border border-white/15 bg-[#071322]/92 p-3 text-white shadow-xl backdrop-blur-sm">
         {selected ? (
           <div className="space-y-1.5 text-xs">
             <h4 className="text-sm font-semibold text-white">{selected.name}</h4>
             <p className="text-white/70">
-              {selected.citiesServed ?? selected.countiesServed ?? "Unknown area"} | {selected.source}
+              {selected.coordinateLabel ?? selected.citiesServed ?? selected.countiesServed ?? "Unknown area"} | {selected.source}
+            </p>
+            <p className="text-white/70">
+              {selected.coordinateSource === "approximate" ? "Approximate fallback pin" : "Geocoded pin"}
             </p>
             <p className="text-white/70">
               Population: {selected.populationServed?.toLocaleString() ?? "N/A"}

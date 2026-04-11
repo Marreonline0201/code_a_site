@@ -12,7 +12,7 @@ export function TapWaterTabs() {
         <h1 className="text-3xl font-bold">Tap Water Quality Lookup</h1>
         <p className="max-w-3xl text-muted-foreground">
           Check your local water quality using EPA data for any U.S. water system,
-          or look up NYC-specific lead testing results.
+          or look up NYC-specific lead testing results and ZIP-level trends.
         </p>
       </header>
 

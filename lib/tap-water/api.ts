@@ -7,6 +7,7 @@ type WaterApiSuccessResponse = {
   nearbySummary?: TapWaterSearchResponse["nearbySummary"];
   leadSummary?: TapWaterSearchResponse["leadSummary"];
   distribution?: TapWaterSearchResponse["distribution"];
+  zipTrends?: TapWaterSearchResponse["zipTrends"];
   recentTests?: TapWaterSearchResponse["recentTests"];
   notes?: TapWaterSearchResponse["notes"];
 };
@@ -81,6 +82,7 @@ export async function searchTapWaterSamples(
     nearbySummary: successBody.nearbySummary ?? buildFallbackNearbySummary(data),
     leadSummary: successBody.leadSummary,
     distribution: successBody.distribution,
+    zipTrends: successBody.zipTrends,
     recentTests: successBody.recentTests ?? data,
     notes: successBody.notes,
   };

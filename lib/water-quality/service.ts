@@ -7,6 +7,7 @@ import {
   getHealthSummaryForSample,
   summarizeSamples,
 } from "./summary";
+import { getZipTrendSummary } from "./zip-trends";
 import { normalizeZipCode } from "./zip";
 import type {
   NearbyQueryResult,
@@ -24,6 +25,10 @@ const ELEVATED_LEAD_THRESHOLD_MG_L = 0.015;
 async function loadWaterDataset() {
   const { getWaterDataset } = await import("./repository");
   return getWaterDataset();
+}
+
+async function loadZipTrendSummary(zip: string) {
+  return getZipTrendSummary(zip);
 }
 
 function coercePage(value: number | undefined) {
@@ -526,6 +531,7 @@ export function getRecentTests(records: WaterSample[], limit = 5) {
 export function buildZipLeadQueryResult(
   zip: string,
   matching: WaterSample[],
+  zipTrends: Awaited<ReturnType<typeof getZipTrendSummary>> | null,
   limit?: number,
 ): NearbyQueryResult {
   const recentTests = getRecentTests(matching, limit);
@@ -553,6 +559,7 @@ export function buildZipLeadQueryResult(
     },
     leadSummary,
     distribution,
+    zipTrends,
     recentTests: summarized,
     notes:
       "Lead results vary by home and plumbing conditions. First draw reflects water that sat in household pipes, while flushed samples can better reflect deeper plumbing or system conditions.",
@@ -572,6 +579,7 @@ export async function querySamplesByZip(
 
   const dataset = await loadWaterDataset();
   const matching = dataset.records.filter((sample) => sample.zipCode === zip);
+  const zipTrends = await loadZipTrendSummary(zip);
 
   /*
    * Previous ZIP nearest path (kept for restore):
@@ -584,7 +592,7 @@ export async function querySamplesByZip(
    * );
    */
 
-  return buildZipLeadQueryResult(zip, matching, filters.limit);
+  return buildZipLeadQueryResult(zip, matching, zipTrends, filters.limit);
 }
 
 export async function getRecentSamples(limit = 10) {

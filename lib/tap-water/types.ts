@@ -65,6 +65,32 @@ export type TapWaterNearbySummary = {
   };
 };
 
+export type TapWaterZipTrendRecord = {
+  zipCode: string;
+  year: number;
+  totalSamples: number;
+  samplesWithLead: number;
+  percentWithLead: number;
+  averageFirstDrawMgL: number | null;
+  averageSecondDrawMgL: number | null;
+  averageAllMgL: number | null;
+  highestDrawMgL: number | null;
+};
+
+export type TapWaterZipTrendSummary = {
+  zipCode: string;
+  recordCount: number;
+  years: number[];
+  totalSamples: number;
+  samplesWithLead: number;
+  averagePercentWithLead: number | null;
+  averageFirstDrawMgL: number | null;
+  averageSecondDrawMgL: number | null;
+  averageAllMgL: number | null;
+  highestDrawMgL: number | null;
+  records: TapWaterZipTrendRecord[];
+};
+
 export type TapWaterMeta = {
   zip?: string;
   origin?: {
@@ -98,6 +124,7 @@ export type TapWaterSearchResponse = {
     elevated: { count: number; percent: number };
   };
   recentTests?: TapWaterSample[];
+  zipTrends?: TapWaterZipTrendSummary | null;
   notes?: string;
 };
 

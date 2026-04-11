@@ -9,6 +9,7 @@ import {
   getRecentTests,
 } from "./service";
 import { normalizeWaterSample } from "./normalize";
+import { getZipTrendSummary } from "./zip-trends";
 import { assertValidZipCode } from "./zip";
 
 function buildRow(overrides: Record<string, string> = {}) {
@@ -38,7 +39,7 @@ test("valid ZIP query builds lead summary, distribution, and recent tests", () =
     normalizeWaterSample(buildRow({ "Kit ID": "2", "Date Collected": "01/03/2024", "Lead First Draw (mg/L)": "0.016" }), 3),
     normalizeWaterSample(buildRow({ "Kit ID": "3", "Date Collected": "01/02/2024", "Lead First Draw (mg/L)": "0.000" }), 4),
   ];
-  const result = buildZipLeadQueryResult("11356", records, 2);
+  const result = buildZipLeadQueryResult("11356", records, null, 2);
 
   assert.equal(result.meta.zip, "11356");
   assert.equal(result.meta.count, 2);
@@ -51,7 +52,7 @@ test("valid ZIP query builds lead summary, distribution, and recent tests", () =
 });
 
 test("empty ZIP query still returns aggregate shape", () => {
-  const result = buildZipLeadQueryResult("00000", [], 5);
+  const result = buildZipLeadQueryResult("00000", [], null, 5);
 
   assert.equal(result.meta.zip, "00000");
   assert.equal(result.meta.total, 0);
@@ -123,6 +124,16 @@ test("getRecentTests returns newest records first", () => {
     recent.map((sample) => sample.sampleNumber),
     ["101", "102"],
   );
+});
+
+test("loads ZIP trend summaries by zip code", async () => {
+  const summary = await getZipTrendSummary("11356");
+
+  assert.ok(summary);
+  assert.equal(summary?.zipCode, "11356");
+  assert.ok((summary?.recordCount ?? 0) > 0);
+  assert.ok((summary?.records.length ?? 0) > 0);
+  assert.ok((summary?.records[0]?.averageFirstDrawMgL ?? 0) < 0.01);
 });
 
 test("invalid ZIP input returns clear route error", async () => {
