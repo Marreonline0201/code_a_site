@@ -23,7 +23,7 @@ const bottles = [
   { name: "Flow", origin: "Canada · Still", image: "/images/flow.png" },
 ];
 
-const TOTAL_FRAMES = 30;
+const TOTAL_FRAMES = 60;
 const FRAME_W = 960;
 const FRAME_H = 540;
 
@@ -117,24 +117,24 @@ export function OceanHeroSection() {
     return () => { window.removeEventListener("scroll", onScroll); cancelAnimationFrame(rafRef.current); };
   }, []);
 
-  // ── Computed scroll-driven values ──
-  // Phase 1: 0-15% — title enters
-  const titleOpacity = rangeProgress(progress, 0, 0.08);
-  const titleY = (1 - rangeProgress(progress, 0, 0.12)) * 60; // slides up from 60px
+  // ── Computed scroll-driven values (compressed for 800svh) ──
+  // Phase 1: 0-4% — title enters
+  const titleOpacity = rangeProgress(progress, 0, 0.03);
+  const titleY = (1 - rangeProgress(progress, 0, 0.04)) * 60;
 
-  // Phase 2: 10-25% — "Water" word and subtitle enter
-  const waterOpacity = rangeProgress(progress, 0.08, 0.18);
-  const subtitleOpacity = rangeProgress(progress, 0.12, 0.22);
-  const ctaOpacity = rangeProgress(progress, 0.18, 0.28);
+  // Phase 2: 3-8% — "Water" word and subtitle enter
+  const waterOpacity = rangeProgress(progress, 0.03, 0.06);
+  const subtitleOpacity = rangeProgress(progress, 0.05, 0.08);
+  const ctaOpacity = rangeProgress(progress, 0.06, 0.10);
 
-  // Phase 3: 25-35% — text shifts left, bottle zone activates
-  const textShift = rangeProgress(progress, 0.25, 0.38);
-  const textX = textShift * -15; // shift left by 15% (percentage of viewport)
-  const textScale = 1 - textShift * 0.15; // shrink slightly
+  // Phase 3: 10-15% — text shifts left, bottle zone activates
+  const textShift = rangeProgress(progress, 0.10, 0.16);
+  const textX = textShift * -15;
+  const textScale = 1 - textShift * 0.15;
 
-  // Phase 4: 35-95% — bottles appear one by one
-  const BOTTLE_START = 0.33;
-  const BOTTLE_END = 0.92;
+  // Phase 4: 15-93% — bottles appear one by one
+  const BOTTLE_START = 0.15;
+  const BOTTLE_END = 0.93;
   const bottleRange = BOTTLE_END - BOTTLE_START;
   const perBottle = bottleRange / bottles.length;
 
