@@ -5,14 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import Head from "next/head";
 
-/* ── Bottle data with real product images ── */
+/* ── Bottle data with local images ── */
 const bottles = [
-  { name: "Evian", image: "https://m.media-amazon.com/images/I/61rSQRSCIhL._AC_SL1500_.jpg", x: 6, y: 48, rotation: -15, scale: 0.85 },
-  { name: "Fiji", image: "https://m.media-amazon.com/images/I/61l2q0W3a5L._AC_SL1500_.jpg", x: 22, y: 60, rotation: 10, scale: 0.9 },
-  { name: "Gerolsteiner", image: "https://m.media-amazon.com/images/I/61CkN1RqcrL._AC_SL1500_.jpg", x: 40, y: 45, rotation: -8, scale: 0.8 },
-  { name: "Perrier", image: "https://m.media-amazon.com/images/I/71AW4q2E9cL._AC_SL1500_.jpg", x: 58, y: 58, rotation: 12, scale: 1.05 },
-  { name: "Voss", image: "https://m.media-amazon.com/images/I/51A4s+NZBGL._AC_SL1500_.jpg", x: 74, y: 46, rotation: -20, scale: 0.82 },
-  { name: "S.Pellegrino", image: "https://m.media-amazon.com/images/I/71QBEbpuiNL._AC_SL1500_.jpg", x: 88, y: 55, rotation: 8, scale: 0.85 },
+  { name: "Evian", image: "/images/evian.png", x: 6, y: 48, rotation: -15, scale: 0.85 },
+  { name: "Fiji", image: "/images/fiji.png", x: 22, y: 60, rotation: 10, scale: 0.9 },
+  { name: "Gerolsteiner", image: "/images/gerolsteiner.png", x: 40, y: 45, rotation: -8, scale: 0.8 },
+  { name: "Topo Chico", image: "/images/topo-chico.png", x: 58, y: 58, rotation: 12, scale: 1.05 },
+  { name: "Liquid Death", image: "/images/liquid-death.png", x: 74, y: 46, rotation: -20, scale: 0.82 },
+  { name: "Mountain Valley", image: "/images/mountain-valley.png", x: 88, y: 55, rotation: 8, scale: 0.85 },
 ];
 
 const CYCLE_MS = 3200;
